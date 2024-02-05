@@ -1,23 +1,10 @@
-# Build Pac-Man from Scratch in Python with PyGame!!
 import copy
-from board_calibration import prompts_paradigm_SI,boards_paradigm_SI, start_positions_paradigm_SI, commands_list_board
+from board_calibration import boards_tutorial, start_positions_tutorial, commands_list_tutorial
 import pygame
 import math
 import time
-import pylsl
 
-
-def lsl_mrk_outlet(name):
-    info = pylsl.stream_info(name, 'Markers', 1, 0, pylsl.cf_string, 'ID66666666');
-    outlet = pylsl.stream_outlet(info, 1, 1)
-    print('Calibration created result outlet.')
-    return outlet
-
-def bci_calibration(dev_mode: bool = False):
-    if not dev_mode:
-        # LSL COMMUNICATION
-        mrkstream_allowed_turn_out = lsl_mrk_outlet('PyGame - Paradigma Experimental') # important this is first
-
+def calibration_tutorial():
     # GAME
     pygame.init()
     current_level = 0  # Inicialmente, el nivel 0 está en juego
@@ -27,20 +14,19 @@ def bci_calibration(dev_mode: bool = False):
     WIDTH = int(display_info.current_h)
     HEIGHT = int(display_info.current_h)
 
-    level = copy.deepcopy(boards_paradigm_SI[current_level])
-    prompts = copy.deepcopy(prompts_paradigm_SI[current_level])
+    level = copy.deepcopy(boards_tutorial[current_level])
     div_width = len(level[0])  # 31
     div_height = len(level)  # 38
     num1 = HEIGHT // div_height #23
     num2 = WIDTH // div_width #29
 
 
-    commands_list = commands_list_board.pop(0)
+    commands_list = commands_list_tutorial.pop(0)
      # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN, 4-STOP
 
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
     timer = pygame.time.Clock()
-    fps = 60  # This decides how fast the game goes.
+    fps = 60  # This decides how fast the game goes. Including pacman and ghosts.
     font = pygame.font.Font("RetroFont.ttf", 30)
     color = "white"
     PI = math.pi
@@ -54,7 +40,8 @@ def bci_calibration(dev_mode: bool = False):
                      pygame.transform.scale(pygame.image.load(f'assets/extras_images/left_1.png'), (image_xscale, image_yscale)),
                      pygame.transform.scale(pygame.image.load(f'assets/extras_images/forward_1.png'), (image_xscale, image_yscale)),
                      pygame.transform.scale(pygame.image.load(f'assets/extras_images/back_1.png'), (image_xscale, image_yscale)),
-                     pygame.transform.scale(pygame.image.load(f'assets/extras_images/back_1.png'), (image_xscale*10, image_yscale*10))] # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
+                     pygame.transform.scale(pygame.image.load(f'assets/extras_images/back_1.png'), (image_xscale*10, image_yscale*10))]
+                    # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN, 4-Bigger Image
     arrow = pygame.transform.scale(
         pygame.image.load(f"assets/extras_images/arrow.png"), (image_xscale, image_yscale)
     )
@@ -65,9 +52,11 @@ def bci_calibration(dev_mode: bool = False):
         pygame.transform.rotate(arrow, 180),
     ]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
     cookie = pygame.transform.scale(pygame.image.load(f'assets/extras_images/cookie.png'), (image_xscale, image_yscale))
+    cookie_big = pygame.transform.scale(pygame.image.load(f'assets/extras_images/cookie.png'), (image_xscale*10, image_yscale*10))
+
 
     ## Positions
-    start = start_positions_paradigm_SI.pop(0)
+    start = start_positions_tutorial.pop(0)
     player_x = int(start[0] * num2)
     player_y = int(start[1]* num1)
     direction = start[2]
@@ -83,13 +72,33 @@ def bci_calibration(dev_mode: bool = False):
     last_activate_turn_tile = [1, 1]
 
     def draw_misc():
+        if current_level == 0 or current_level == 1:
+            tutorial_text = font.render("AVANZAR", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
+            tutorial_text = font.render("Moverá al personaje hacia su parte delantera", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
+        elif current_level == 2 or current_level == 3:
+            tutorial_text = font.render("RETROCEDER", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
+            tutorial_text = font.render("Moverá al personaje hacia su parte trasera", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
+        elif current_level == 4 or current_level == 5:
+            tutorial_text = font.render("DERECHA", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
+            tutorial_text = font.render("Moverá al personaje hacia su derecha", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
+        elif current_level == 6 or current_level == 7:
+            tutorial_text = font.render("IZQUIERDA", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
+            tutorial_text = font.render("Moverá al personaje hacia su izquierda", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
         if game_won:
             pygame.draw.rect(screen, "gray", [WIDTH*.05, HEIGHT*.1, WIDTH*.9, HEIGHT*.8], 0, 10)
             pygame.draw.rect(screen, "green", [WIDTH*.1, HEIGHT*.2, WIDTH*.8, HEIGHT*.6], 0, 10)
             level_done = font.render("¡Nivel Completado!", True, "red")
             prepare_for_next_level = font.render("¡Prepárate para el siguiente nivel!", True, "red")
             screen.blit(level_done,
-                        (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2))
+                        (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2-100))
             screen.blit(prepare_for_next_level,
                         (WIDTH / 2 - prepare_for_next_level.get_width() / 2,
                          HEIGHT / 2 - prepare_for_next_level.get_height() / 2 + 100))
@@ -107,13 +116,15 @@ def bci_calibration(dev_mode: bool = False):
             goal_y = player_y + num1 * 3
         return goal_x, goal_y
 
-    def check_collisions (last_activate_turn_tile):
+    def check_collisions(last_activate_turn_tile):
         level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
-        if level[center_y // num1][center_x // num2] == 1:
-            level[center_y // num1][center_x // num2] = 0
-        if level[center_y // num1][center_x // num2] == 2:
-            level[center_y // num1][center_x // num2] = 0
+        if 0 < player_x < 870:
+            if level[center_y // num1][center_x // num2] == 1:
+                level[center_y // num1][center_x // num2] = 0
+            if level[center_y // num1][center_x // num2] == 2:
+                level[center_y // num1][center_x // num2] = 0
         return last_activate_turn_tile
+
 
     def draw_board(color):
         for i in range(len(level)):
@@ -215,6 +226,52 @@ def bci_calibration(dev_mode: bool = False):
             screen.blit(player_images[last_direction], (player_x, player_y))
         return last_direction
 
+    def check_position(centerx, centery):
+        turns = [False, False, False, False]
+        num3 = 5
+        # check collisions based on center x and center y of player +/- fudge number
+        if centerx // 30 < 29:
+            if direction == 0:
+                if level[centery // num1][(centerx - num3) // num2] < 3:
+                    turns[1] = True
+            if direction == 1:
+                if level[centery // num1][(centerx + num3) // num2] < 3:
+                    turns[0] = True
+            if direction == 2:
+                if level[(centery + num3) // num1][centerx // num2] < 3:
+                    turns[3] = True
+            if direction == 3:
+                if level[(centery - num3) // num1][centerx // num2] < 3:
+                    turns[2] = True
+
+            if direction == 2 or direction == 3:
+                if 12 <= centerx % num2 <= 18:
+                    if level[(centery + num3) // num1][centerx // num2] < 3:
+                        turns[3] = True
+                    if level[(centery - num3) // num1][centerx // num2] < 3:
+                        turns[2] = True
+                if 12 <= centery % num1 <= 18:
+                    if level[centery // num1][(centerx - num2) // num2] < 3:
+                        turns[1] = True
+                    if level[centery // num1][(centerx + num2) // num2] < 3:
+                        turns[0] = True
+            if direction == 0 or direction == 1:
+                if 12 <= centerx % num2 <= 18:
+                    if level[(centery + num1) // num1][centerx // num2] < 3:
+                        turns[3] = True
+                    if level[(centery - num1) // num1][centerx // num2] < 3:
+                        turns[2] = True
+                if 12 <= centery % num1 <= 18:
+                    if level[centery // num1][(centerx - num3) // num2] < 3:
+                        turns[1] = True
+                    if level[centery // num1][(centerx + num3) // num2] < 3:
+                        turns[0] = True
+            if direction == 4:
+                turns = [True, True, True, True]
+        else:
+            turns = [True, True, True, True]
+
+        return turns
 
 
     def move_player(play_x, play_y):
@@ -232,7 +289,7 @@ def bci_calibration(dev_mode: bool = False):
 
     def change_colors(color):
 
-        if len(commands_list)> 0:
+        if len(commands_list)>= 0:
             if first_movement==True:
                 movement_command = current_command
                 if current_command == 'right':  # Right
@@ -255,26 +312,24 @@ def bci_calibration(dev_mode: bool = False):
                     screen.blit(arrow_images[3],(player_x, player_y+num1))
 
             pygame.display.flip()
-            said_command = prompts.pop(0)
 
             # print(last_direction)
             # print(movement_command)
-            # print(said_command)
             time.sleep(1.4)
             # Green (Imagined Speech)
             color = "green"
             draw_board(color)
+            draw_misc()
             draw_player(last_direction)
             pygame.display.flip()
-            if not dev_mode: mrkstream_allowed_turn_out.push_sample(pylsl.vectorstr([str(said_command)]))
             time.sleep(1.4)
 
             # Blue (Auditory Speech)
             color = "blue"
             draw_board(color)
+            draw_misc()
             draw_player(last_direction)
             pygame.display.flip()
-            if not dev_mode: mrkstream_allowed_turn_out.push_sample(pylsl.vectorstr([str("Spoken " + said_command)]))
             time.sleep(1.4)
             color = "white"
             draw_board(color)
@@ -288,37 +343,122 @@ def bci_calibration(dev_mode: bool = False):
 
     run = True
     first_movement = True
+    move_counter = 0
     while run:
         timer.tick(fps)
-        if startup_counter < fps*20 and not game_won:
+        if startup_counter < fps*3 and not game_won:
             moving = False
             startup_counter += 1
         else:
             moving = True
 
         if moving and first_movement:
-           color = change_colors(color)
+           change_colors(color)
            first_movement = False
 
+        if move_counter == 0:
+            # Bienvenida
+            screen.fill("black")
+            tutorial_text = font.render("¡Bienvenido al tutorial!", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2))
+            pygame.display.flip()
+            time.sleep(5)
+            # Objetivo
+            screen.fill("black")
+            tutorial_text = font.render("Come todas las galletas para ganar", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2 - 300))
+            screen.blit(player_images[4], (WIDTH * 1 / 6, HEIGHT / 2-100))
+            screen.blit(cookie_big, (WIDTH * 1 / 2, HEIGHT / 2-100))
+            pygame.display.flip()
+            time.sleep(7)
+            # Prompts
+            screen.fill("black")
+            tutorial_text = font.render("Puedes utilizar 4 palabras:", True, "white")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2 - 300))
+            tutorial_text = font.render("Avanzar", True, "white")
+            screen.blit(tutorial_text, (WIDTH * 1 / 2, HEIGHT / 2-200))
+            tutorial_text = font.render("Retroceder", True, "white")
+            screen.blit(tutorial_text, (WIDTH * 1 / 2, HEIGHT / 2-100))
+            tutorial_text = font.render("Izquierda", True, "white")
+            screen.blit(tutorial_text, (WIDTH * 1 / 2, HEIGHT / 2))
+            tutorial_text = font.render("Derecha", True, "white")
+            screen.blit(tutorial_text, (WIDTH * 1 / 2, HEIGHT / 2+100))
+            pygame.display.flip()
+            time.sleep(7)
+            # Colores
+            screen.fill("black")
+            tutorial_text = font.render("En VERDE", True, "green")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
+            tutorial_text = font.render("Realiza el HABLA IMAGINADA", True, "green")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
+            draw_board("green")
+            pygame.display.flip()
+            time.sleep(7)
+            screen.fill("black")
+            tutorial_text = font.render("En AZUL", True, "blue")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
+            tutorial_text = font.render("Realiza el HABLA VOCALIZADA", True, "blue")
+            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
+            draw_board("blue")
+            pygame.display.flip()
+            time.sleep(7)
+            move_counter +=1
 
         screen.fill("black")
-        draw_board(color)
+        draw_board("white")
         center_x = int(player_x + image_xscale//2)
         center_y = int(player_y + image_yscale//2)
 
+        # FIX POSITIONS
+        # Tutorial
+        if current_level==2 and moving:
+            direction = 3
+            last_direction = draw_player(last_direction)
+        elif current_level==3 and moving:
+            direction = 1
+            last_direction = draw_player(last_direction)
+        elif current_level==4 and moving:
+            direction = 2
+            last_direction = draw_player(last_direction)
+        elif current_level==5 and moving:
+            direction = 0
+            last_direction = draw_player(last_direction)
+        elif current_level==6 and moving:
+            direction = 3
+            last_direction = draw_player(last_direction)
+        elif current_level==7 and moving:
+            direction = 1
+            last_direction = draw_player(last_direction)
+        # Examples
+        if current_level==8 and moving and move_counter==1:
+            direction = 0
+            last_direction = draw_player(last_direction)
+            move_counter +=1
+        elif current_level==9 and moving and move_counter==2:
+            direction = 2
+            last_direction = draw_player(last_direction)
+            move_counter +=1
+        elif current_level==10 and moving and move_counter==3:
+            direction = 1
+            last_direction = draw_player(last_direction)
+            move_counter +=1
+        elif current_level==11 and moving and move_counter==4:
+            direction = 0
+            last_direction = draw_player(last_direction)
+            move_counter +=1
 
         last_direction = draw_player(last_direction)
+        draw_misc()
         turns_allowed = [True,True,True,True]
 
         if moving:
             player_x, player_y = move_player(player_x, player_y)
-
-        last_activate_turn_tile = check_collisions (last_activate_turn_tile)
-
+        last_activate_turn_tile = check_collisions(last_activate_turn_tile)
 
         if math.isclose(goal_x, player_x, abs_tol = 0) and math.isclose(goal_y, player_y, abs_tol = 0):
-            change_colors(color)
-            # Change Command
+            if len(commands_list) != 0:
+                change_colors(color)
+           # Change Command
             if len(commands_list) > 0:
                 current_command = commands_list.pop(0)
             else:
@@ -333,30 +473,27 @@ def bci_calibration(dev_mode: bool = False):
                 direction = 2
             if current_command == "down":
                 direction = 3
-
             goal_x, goal_y = command_leader(current_command, player_y, player_x)
 
 
         if  game_won:
-            first_movement = True
             draw_misc()
             pygame.display.flip()
-            time.sleep(10)
+            time.sleep(3)
             startup_counter = 0
-            start = start_positions_paradigm_SI.pop(0)
+            start = start_positions_tutorial.pop(0)
             player_x = int(start[0] * num2)
             player_y = int(start[1]* num1)
             direction = start[2]
             direction_command = start[2]
-            # score = 0
             current_level += 1
-            if current_level < len(boards_paradigm_SI):
-                level = copy.deepcopy(boards_paradigm_SI[current_level])
-                prompts = copy.deepcopy(prompts_paradigm_SI[current_level])
+            if current_level < len(boards_tutorial):
+                level = copy.deepcopy(boards_tutorial[current_level])
             game_won = False
-            commands_list = commands_list_board.pop(0)
+            commands_list = commands_list_tutorial.pop(0)
             current_command = commands_list.pop(0)
             goal_x, goal_y = command_leader(current_command, player_y, player_x)
+            first_movement = True
 
 
         for event in pygame.event.get():

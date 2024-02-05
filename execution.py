@@ -14,7 +14,9 @@ import os
 # The report file will only be saved when the game finishes without quitting.
 # You don't have to close or open a new game to select a different mode.
 
-# TODO: Redo calibration idea with this version, add the option in menu
+# TODO: Should calibration have a error key? It would make sense
+# TODO: Right after saving the file with calibration, the training should load it and start immediately
+# TODO: The training models should save themselves and then be able to load independently of multiplayer or singleplayer
 
 # TODO: Once you have that, send the EEG piece to the processing and receive the answer (in execution version)
 # TODO: Run the full calibration with training and then testing with executions (both multiplayer and singleplayer)
@@ -33,7 +35,7 @@ def lsl_inlet(name, number_subject=''):
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
     return inlet
 
-def play_game(game_mode: str):
+def play_game(game_mode: str, dev_mode: bool = False):
     ASSETS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'assets'))
 
     if game_mode=='Tutorial':
@@ -49,7 +51,6 @@ def play_game(game_mode: str):
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
         execution_boards = singleplayer_execution_boards
 
-    dev_mode = True
     if not dev_mode:
         mrkstream_out = lsl_mrk_outlet('Task_Markers')  # important this is first
 
@@ -632,14 +633,15 @@ def play_game(game_mode: str):
 
         pygame.display.flip()
     #pygame.quit()
-    mrkstream_out.push_sample(pylsl.vectorstr(['die']))
+    if not dev_mode:
+        mrkstream_out.push_sample(pylsl.vectorstr(['die']))
 
-    filename = datetime.now().strftime('game_variables_%H%M_%m%d%Y.txt')
+        filename = datetime.now().strftime('game_variables_%H%M_%m%d%Y.txt')
 
-    file = open(os.path.join(ASSETS_PATH, 'game_saved_files', filename), 'w')
-    file.write(f'game_mode, {game_mode}\n')
-    file.write(f'total_game_time, {total_game_time}\n')
-    file.write(f'cookie_winner, {cookie_winner}\n')
-    file.write(f'player_1_turns, {player_1_total_game_turns}\n')
-    file.write(f'player_2_turns, {player_2_total_game_turns}\n')
-    file.close()
+        file = open(os.path.join(ASSETS_PATH, 'game_saved_files', filename), 'w')
+        file.write(f'game_mode, {game_mode}\n')
+        file.write(f'total_game_time, {total_game_time}\n')
+        file.write(f'cookie_winner, {cookie_winner}\n')
+        file.write(f'player_1_turns, {player_1_total_game_turns}\n')
+        file.write(f'player_2_turns, {player_2_total_game_turns}\n')
+        file.close()

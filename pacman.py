@@ -1,6 +1,6 @@
 # Build Pac-Man from Scratch in Python with PyGame!!
 import copy
-from board import original_board
+from board_calibration import original_board
 import pygame
 import math
 
