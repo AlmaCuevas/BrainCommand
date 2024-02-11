@@ -81,6 +81,7 @@ def bci_calibration(dev_mode: bool = False):
     startup_counter = 0
     game_won = False
     last_activate_turn_tile = [1, 1]
+    button_pressed = False
 
     def draw_misc():
         if game_won:
@@ -316,7 +317,7 @@ def bci_calibration(dev_mode: bool = False):
         last_activate_turn_tile = check_collisions (last_activate_turn_tile)
 
 
-        if math.isclose(goal_x, player_x, abs_tol = 0) and math.isclose(goal_y, player_y, abs_tol = 0):
+        if goal_x == player_x and goal_y == player_y:
             change_colors(color)
             # Change Command
             if len(commands_list) > 0:
@@ -348,7 +349,6 @@ def bci_calibration(dev_mode: bool = False):
             player_y = int(start[1]* num1)
             direction = start[2]
             direction_command = start[2]
-            # score = 0
             current_level += 1
             if current_level < len(boards_paradigm_SI):
                 level = copy.deepcopy(boards_paradigm_SI[current_level])
@@ -358,10 +358,15 @@ def bci_calibration(dev_mode: bool = False):
             current_command = commands_list.pop(0)
             goal_x, goal_y = command_leader(current_command, player_y, player_x)
 
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+            if not dev_mode:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
+                    button_pressed = True
+                if event.type == pygame.KEYUP and event.key == pygame.K_j and button_pressed:
+                    button_pressed = False
+                    mrkstream_allowed_turn_out.push_sample(pylsl.vectorstr(["Mistake"]))
 
         pygame.display.flip()
     pygame.quit()

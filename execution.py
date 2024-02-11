@@ -14,9 +14,10 @@ import os
 # The report file will only be saved when the game finishes without quitting.
 # You don't have to close or open a new game to select a different mode.
 
-# TODO: Should calibration have a error key? It would make sense
-# TODO: Right after saving the file with calibration, the training should load it and start immediately
-# TODO: The training models should save themselves and then be able to load independently of multiplayer or singleplayer
+# TODO: The menu should be able to call the training and return a 'done.' message (that means the tutorial cant run? maybe run the tutorial in another computer?):
+#       TODO: Right after saving the file with calibration, the training should load it and start immediately.
+            # TODO: I can't do that until I know which device I am using and what output they provide.
+#       TODO: The training models should save themselves and then be able to load independently of multiplayer or singleplayer
 
 # TODO: Once you have that, send the EEG piece to the processing and receive the answer (in execution version)
 # TODO: Run the full calibration with training and then testing with executions (both multiplayer and singleplayer)
