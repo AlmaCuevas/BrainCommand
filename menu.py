@@ -128,5 +128,6 @@ class CreditsMenu(Menu):
             self.game.display.fill(self.game.BLACK)
             self.game.draw_text('Créditos', 70, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 - 100)
             self.game.draw_text('Hecho por AlmaCuevas', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 + 30)
+            self.game.draw_text('Hecho por Santiago', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 + 50)
             self.blit_screen()
 
