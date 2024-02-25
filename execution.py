@@ -438,7 +438,7 @@ def play_game(game_mode: str, dev_mode: bool = False):
         if game_mode == 'Multiplayer':
             player_2_center_x = player_2_player_x + xscale // 2
             player_2_center_y = player_2_player_y + yscale // 2
-            level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y, player_2_center_x, player_2_center_y, corner_color)
+            level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y, player_2_center_x, player_2_center_y)
         else:
             level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y)
 
