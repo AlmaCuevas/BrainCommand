@@ -115,18 +115,38 @@ class MainMenu(Menu):
             self.run_display = False
 
 class CreditsMenu(Menu):
-    def __init__(self, game):
-        Menu.__init__(self, game)
-
     def display_menu(self):
         self.run_display = True
+        text_y_position = self.game.DISPLAY_H / 1  
+        text_y_offset = 20
+    
         while self.run_display:
             self.game.check_events()
             if self.game.START_KEY or self.game.BACK_KEY:
                 self.game.curr_menu = self.game.main_menu
                 self.run_display = False
             self.game.display.fill(self.game.BLACK)
-            self.game.draw_text('Créditos', 70, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 - 100)
-            self.game.draw_text('Hecho por AlmaCuevas', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 + 30)
+        
+        # Titulo
+            self.game.draw_text('Brain Command', 70, self.game.DISPLAY_W / 2, text_y_position)
+        
+        # Gente
+            self.game.draw_text('Hecho por:', 45, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 50 + text_y_offset)
+            self.game.draw_text('Alma Cuevas', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 90 + text_y_offset)
+            self.game.draw_text('Edgar Aguilera', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 130 + text_y_offset)
+            self.game.draw_text('Santiago Mendoza', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 170 + text_y_offset)
+            self.game.draw_text('Eduardo Rivera', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 210 + text_y_offset)
+            self.game.draw_text('David Villanueva', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 250 + text_y_offset)
+            self.game.draw_text('Rebecca De Stefano', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 290 + text_y_offset)
+            self.game.draw_text('Supervisión:', 45, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 380 + text_y_offset)
+            self.game.draw_text('Dra. Luz María Alonso Valerdi', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 420 + text_y_offset)
+            self.game.draw_text('Dr. Alejandro Antonio Torres García', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 460 + text_y_offset)
+            self.game.draw_text('Dr. Luis Alberto Muñoz Ubando', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 500 + text_y_offset)
+        # Cambio de posicion
+            text_y_position += -1.2  
+            text_y_offset += -1.2
+        
             self.blit_screen()
+
+            
 
