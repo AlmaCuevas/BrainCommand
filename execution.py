@@ -76,12 +76,10 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         mrkstream_out = lsl_mrk_outlet('Task_Markers')  # important this is first
 
         # Wait for a marker, then start recording EEG data
-        start_time_1 = 0
         data_1 = collections.deque()
         prediction_movement_1_out = lsl_mrk_outlet('Result', 1)
         eeg_1_in = lsl_inlet('player', 1)  # Don't use special characters or uppercase for the name
         if game_mode == 'Multiplayer':
-            start_time_2 = 0
             prediction_movement_2_out = lsl_mrk_outlet('Result', 2)
             eeg_2_in = lsl_inlet('player', 2)  # Don't use special characters or uppercase for the name
             data_2 = collections.deque()
@@ -175,6 +173,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
     player_1_direction: int = start_1[2]
     player_1_last_direction: int = start_1[2]
     prediction_movement_1: int = start_1[2]
+    player_1_turns_allowed: list[bool] = [False, False, False, False]
     start_time_1 = 0
     start_time_2 = 0
 
@@ -200,25 +199,25 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
     cookie_winner: list = []
     cookie_winner_2_num: int = 0
     calibration_moving_flag = True
-
+    valid_direction = False
 
     def draw_text(text: str):
         font = pygame.font.Font("RetroFont.ttf", 300)
-        txt_render = font.render(text, True, "red")
+        txt_render = font.render(text, True, "lightgrey")
         screen.blit(txt_render,
                     (WIDTH / 2 - txt_render.get_width() / 2, HEIGHT / 2 - txt_render.get_height() / 2))
 
     def draw_misc(player_num: int, game_mode: str):
-        level_done = font.render("¡Nivel Completado!", True, "red")
+        level_done = font.render("¡Nivel Completado!", True, "lightgrey")
         if game_mode == 'Multiplayer':
             congrats_winner_str = f"¡Felicidades jugador {player_num}!"
         else:
             congrats_winner_str = "¡Felicidades!"
-        congrats_winner = font.render(congrats_winner_str, True, "red")
+        congrats_winner = font.render(congrats_winner_str, True, "lightgrey")
         if game_over:
-            pygame.draw.rect(screen, "gray", [WIDTH * .05, HEIGHT * .1, WIDTH * .9, HEIGHT * .8], 0, 10)
-            pygame.draw.rect(screen, "green", [WIDTH * .1, HEIGHT * .2, WIDTH * .8, HEIGHT * .6], 0, 10)
-            thanks_for_participating = font.render("¡Gracias por jugar!", True, "red")
+            pygame.draw.rect(screen, "lightgrey", [WIDTH * .05, HEIGHT * .1, WIDTH * .9, HEIGHT * .8], 0, 10)
+            pygame.draw.rect(screen, "lightpink4", [WIDTH * .1, HEIGHT * .2, WIDTH * .8, HEIGHT * .6], 0, 10)
+            thanks_for_participating = font.render("¡Gracias por jugar!", True, "lightgrey")
 
             screen.blit(thanks_for_participating,
                         (WIDTH / 2 - thanks_for_participating.get_width() / 2, HEIGHT / 2 - thanks_for_participating.get_height() / 2 + 100))
@@ -227,9 +226,9 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             screen.blit(level_done,
                         (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2))
         elif game_won:
-            pygame.draw.rect(screen, "gray", [WIDTH * .05, HEIGHT * .1, WIDTH * .9, HEIGHT * .8], 0, 10)
-            pygame.draw.rect(screen, "green", [WIDTH * .1, HEIGHT * .2, WIDTH * .8, HEIGHT * .6], 0, 10)
-            prepare_for_next_level = font.render("¡Prepárate para el siguiente nivel!", True, "red")
+            pygame.draw.rect(screen, "lightgrey", [WIDTH * .05, HEIGHT * .1, WIDTH * .9, HEIGHT * .8], 0, 10)
+            pygame.draw.rect(screen, "lightpink4", [WIDTH * .1, HEIGHT * .2, WIDTH * .8, HEIGHT * .6], 0, 10)
+            prepare_for_next_level = font.render("¡Prepárate para el siguiente nivel!", True, "lightgrey")
             screen.blit(prepare_for_next_level,
                         (WIDTH / 2 - prepare_for_next_level.get_width() / 2, HEIGHT / 2 - prepare_for_next_level.get_height() / 2 + 100))
             screen.blit(congrats_winner,
@@ -239,7 +238,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
 
 
     def check_collisions(last_activate_turn_tile, player_speed, time_to_corner, turns_allowed, direction, center_x,
-                         center_y, level, player_num, start_time, calibration_moving_flag: bool = True):
+                         center_y, level, player_num, start_player_time, calibration_moving_flag: bool = True):
         cookie_winner_num = 0
         if player_num == 2:
             right_volume = 0
@@ -257,7 +256,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         if sum(corner_check) >= 2 or corner_check == turns_allowed:
             if level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] != -1 * player_num and time_to_corner > 10:
                 channel.play(sound_thud)
-                start_time = time.time()
+                start_player_time = time.time()
                 channel.set_volume(right_volume, left_volume)
                 level[center_y // yscale][center_x // xscale] = -1 * player_num
                 last_activate_turn_tile = [center_y // yscale, center_x // xscale]
@@ -269,7 +268,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
             player_speed = original_speed
             time_to_corner = 0
-        return last_activate_turn_tile, player_speed, time_to_corner, level, cookie_winner_num, start_time
+        return last_activate_turn_tile, player_speed, time_to_corner, level, cookie_winner_num, start_player_time
 
     def draw_player(direction, last_direction, player_x, player_y, player_images, calibration_moving_flag: bool = True):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
@@ -429,7 +428,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         return level
 
     run = True
-    start_time = time.time()
+
     while run:
         timer.tick(fps)
         screen.fill("black")
@@ -451,6 +450,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                 draw_text('1')
             else:
                 draw_text('GO!')
+                start_time = time.time()
         else:
             moving = True
 
@@ -477,14 +477,16 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             if game_mode == 'Calibration 1':
                 calibration_moving_flag = False
                 if time.time() - start_time_1 > 1.4:  # Once the decision is made, user should do the imagined speech
-                    corner_color = 'blue'
+                    if not valid_direction:
+                        start_time_1 = time.time()
+                    elif player_1_speed != 0:
+                        corner_color = 'blue'
                 else:
                     corner_color = 'green'  # Before the 1.4 is to say the decision out loud
                 if time.time() - start_time_1 > 1.4 * 2:
                     if not dev_mode: prediction_movement_1_out.push_sample(pylsl.vectorstr([str(player_1_direction_command)]))
-                    start_time_1 = 0
                     calibration_moving_flag = True
-
+                    valid_direction = False
 
             ## Section to process direction prediction with the EEG.
             # TODO: Put it in a Function and call it instead
@@ -493,8 +495,6 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                 eeg_1, t_eeg_1 = eeg_1_in.pull_sample(timeout=0)
 
                 if time.time() - start_time_1 > 1.4 and player_1_speed == 0: # Between the decision and the imagined speech
-                    start_time_1 = 0
-
 
                     if process_mode:
                         #array = group_methods_test(methods, models_outputs, eeg_1, data_epoch)
@@ -573,6 +573,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             for direction_index in range(0, 4):
                 if player_1_direction_command == direction_index and player_1_turns_allowed[direction_index]:
                     player_1_direction = direction_index
+                    valid_direction = True
                 if game_mode == 'Multiplayer':
                     if player_2_direction_command == direction_index and player_2_turns_allowed[direction_index]:
                         player_2_direction = direction_index
@@ -618,7 +619,6 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                             player_2_speed = original_speed
 
                 if event.key == pygame.K_SPACE and game_over:
-                    total_game_time.append('{:.2f}'.format(time.time() - start_time))
                     player_1_total_game_turns.append(player_1_level_turns[1:])
                     if game_mode == 'Multiplayer': player_2_total_game_turns.append(player_2_level_turns[1:])
                     run = False
@@ -652,7 +652,6 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                         player_1_player_y = int(start_1[1] * yscale)
                         player_1_direction_command = start_1[2]
                     game_won = False
-                    start_time = time.time()
                     player_1_level_turns = []
                     if game_mode == 'Multiplayer': player_2_level_turns = []
             if dev_mode or game_mode == 'Calibration 1':
