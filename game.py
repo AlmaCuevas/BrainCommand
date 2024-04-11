@@ -2,7 +2,7 @@ import pygame
 from menu import *
 
 class Game():
-    def __init__(self):
+    def __init__(self, dev_mode: bool = False, player1_ID: int = 0, player2_ID: int = 0):
         pygame.init()
         display_info = pygame.display.Info()  # Get the monitor's display info
         WIDTH = int(display_info.current_h)
@@ -15,7 +15,7 @@ class Game():
         self.font_name =  'RetroFont.ttf'
         #self.font_name = pygame.font.get_default_font()
         self.BLACK, self.WHITE = (0, 0, 0), (255, 255, 255)
-        self.main_menu = MainMenu(self)
+        self.main_menu = MainMenu(self, dev_mode, player1_ID, player2_ID)
         self.credits = CreditsMenu(self)
         self.curr_menu = self.main_menu
 

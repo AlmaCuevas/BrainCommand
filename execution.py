@@ -11,7 +11,7 @@ import time
 import pylsl
 import os
 import numpy as np
-#from voting_system_platform.processing_methods.data_classification import group_methods_test # TODO: FIX REFERENCE
+import pickle
 
 # The report file will only be saved when the game finishes without quitting.
 # You don't have to close or open a new game to select a different mode.
@@ -38,7 +38,7 @@ def lsl_inlet(name, number_subject=''):
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
     return inlet
 
-def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False):
+def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False, player1_subject_id: int = 0, player2_subject_id: int = 0):
     ASSETS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'assets'))
 
     if game_mode=='Calibration 1' or game_mode=='Calibration 2':
@@ -55,22 +55,9 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         execution_boards = singleplayer_execution_boards
 
     if process_mode:
-        #models_outputs = FROM LOADING THE CLF FROM A FOLDER
-        methods: dict = {
-            "CSP_LDA": True,
-            "RIEMMAN_SVC": False,
-            "XDAWN_RIEMMAN": False,
-            "XDAWN_LogReg": False,
-            "TCANET_Global_Model": False,
-            "TCANET": False,  # todo It always gives answer 0. Even when the training is high. why?
-            "diffE": False,
-            "DeepConvNet": False,
-            "LSTM": False,
-            "GRU": False,
-            "CNN_LSTM": False,
-            "feature_extraction": False,
-        }
-        pass
+        clf_1 = pickle.load(open('BrainCommand/assets/classifier_data/calibration1_sub{:02d}.pkl'.format(player1_subject_id), 'rb'))
+        if game_mode == 'Multiplayer':
+            clf_2 = pickle.load(open('BrainCommand/assets/classifier_data/calibration1_sub{:02d}.pkl'.format(player2_subject_id), 'rb'))
 
     if not dev_mode:
         mrkstream_out = lsl_mrk_outlet('Task_Markers')  # important this is first
@@ -428,7 +415,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         return level
 
     run = True
-
+    start_time = time.time() # In case you are running dev_mode
     while run:
         timer.tick(fps)
         screen.fill("black")
@@ -497,10 +484,9 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                 if time.time() - start_time_1 > 1.4 and player_1_speed == 0: # Between the decision and the imagined speech
 
                     if process_mode:
-                        #array = group_methods_test(methods, models_outputs, eeg_1, data_epoch)
-                        array = [1, 1, 1, 1]
-                        controlled_array = [array_value * turns_allowed for array_value, turns_allowed in zip(array, player_1_turns_allowed)]
-                        prediction_movement_1 = np.argmax(controlled_array) # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
+                        probs_array = clf_1.predict_proba(eeg_1)
+                        valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_1_turns_allowed)]
+                        prediction_movement_2 = np.argmax(valid_array) # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
                     else:
                         allowed_1_movement_random = [x for x, flag in zip(movement_option, player_1_turns_allowed) if flag]
                         prediction_movement_1 = allowed_1_movement_random[random.randint(0, len(allowed_1_movement_random)-1)] # exclusive range
@@ -519,10 +505,14 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                     eeg_2, t_eeg_2 = eeg_2_in.pull_sample(timeout=0)
                     if time.time() - start_time_2 > 1.4 and player_2_speed == 0:
                         start_time_2 = 0
-                        ## HERE IS WHERE THE PROCESSING CALL GO! Replace the two lines below
-                        allowed_2_movement_random = [x for x, flag in zip(movement_option, player_2_turns_allowed) if flag]
-                        prediction_movement_2 = allowed_2_movement_random[
-                            random.randint(0, len(allowed_2_movement_random) - 1)]  # exclusive range
+                        if process_mode:
+                            probs_array = clf_2.predict_proba(eeg_2)
+                            valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_2_turns_allowed)]
+                            prediction_movement_2 = np.argmax(valid_array)
+                        else:
+                            allowed_2_movement_random = [x for x, flag in zip(movement_option, player_2_turns_allowed) if flag]
+                            prediction_movement_2 = allowed_2_movement_random[
+                                random.randint(0, len(allowed_2_movement_random) - 1)]  # exclusive range
                         print(f'Player 2. Classifier returned: {prediction_movement_2}')
                         prediction_movement_2_out.push_sample(pylsl.vectorstr([str(prediction_movement_2)]))
                         data_2 = collections.deque()

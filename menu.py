@@ -3,13 +3,15 @@ import execution
 import calibration_tutorial
 
 class Menu():
-    def __init__(self, game):
+    def __init__(self, game, dev_mode: bool = False, player1_ID: int = 0, player2_ID: int = 0):
         self.game = game
-        self.dev_mode = False
+        self.dev_mode = dev_mode
         self.mid_w, self.mid_h = self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2
         self.run_display = True
         self.cursor_rect = pygame.Rect(0, 0, 20, 20)
         self.offset = - 350
+        self.player1_ID = player1_ID
+        self.player2_ID = player2_ID
 
     def draw_cursor(self):
         self.game.draw_text('*', 40, self.cursor_rect.x, self.cursor_rect.y)
@@ -20,8 +22,8 @@ class Menu():
         self.game.reset_keys()
 
 class MainMenu(Menu):
-    def __init__(self, game):
-        Menu.__init__(self, game)
+    def __init__(self, game, dev_mode: bool = False, player1_ID: int = 0, player2_ID: int = 0):
+        Menu.__init__(self, game, dev_mode, player1_ID, player2_ID)
         self.state = "Tutorial"
         self.calibration_tutorialx, self.calibration_tutorialy = self.mid_w, self.mid_h - 100
         self.calibrationx, self.calibrationy = self.mid_w, self.mid_h - 50
@@ -102,13 +104,13 @@ class MainMenu(Menu):
                 execution.play_game(game_mode='Calibration 1', dev_mode=self.dev_mode) # With keys
             elif self.state == 'Calibration 2':
                 self.game.playing = True
-                execution.play_game(game_mode='Calibration 2', dev_mode=self.dev_mode) # With EEG
+                execution.play_game(game_mode='Calibration 2', dev_mode=self.dev_mode, player1_subject_id=self.player1_ID) # With EEG
             elif self.state == 'Multiplayer':
                 self.game.playing = True
-                execution.play_game(game_mode='Multiplayer', dev_mode=self.dev_mode)
+                execution.play_game(game_mode='Multiplayer', dev_mode=self.dev_mode, player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID)
             elif self.state == 'Singleplayer':
                 self.game.playing = True
-                execution.play_game(game_mode='Singleplayer', dev_mode=self.dev_mode)
+                execution.play_game(game_mode='Singleplayer', dev_mode=self.dev_mode, player1_subject_id=self.player1_ID)
             elif self.state == 'Credits':
                 self.game.curr_menu = self.game.credits
             self.run_display = False
