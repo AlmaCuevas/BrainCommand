@@ -121,7 +121,7 @@ class CreditsMenu(Menu):
     
         while self.run_display:
             self.game.check_events()
-            if self.game.START_KEY or self.game.BACK_KEY:
+            if self.game.START_KEY or self.game.BACK_KEY or (text_y_position < -500):
                 self.game.curr_menu = self.game.main_menu
                 self.run_display = False
             self.game.display.fill(self.game.BLACK)
@@ -145,8 +145,5 @@ class CreditsMenu(Menu):
         # Cambio de posicion
             text_y_position += -1.2  
             text_y_offset += -1.2
-        
+
             self.blit_screen()
-
-            
-

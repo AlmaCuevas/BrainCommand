@@ -68,27 +68,32 @@ def calibration_tutorial():
     game_won = False
     last_activate_turn_tile = [1, 1]
 
+    def print_direction_instructions(direction_word: str, complementary_text: str, height_mod: int = 0, color_mod: str = "white"):
+        tutorial_text = font.render(direction_word, True, color_mod)
+        screen.blit(tutorial_text,
+                    (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2 - 300 - height_mod))
+        tutorial_text = font.render(complementary_text, True, color_mod)
+        screen.blit(tutorial_text,
+                    (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2 + 100 + height_mod))
+
     def draw_misc():
+        print(current_level)
+        if current_level > 4 and current_level != 8 and current_level !=9:
+            print_direction_instructions(direction_word="EJECUCIÓN",
+                                         complementary_text="Solo HABLA IMAGINADA, sin presionar tecla", height_mod=100, color_mod="blue")
+        else:
+            print_direction_instructions(direction_word="CALIBRACIÓN",
+                                         complementary_text="Presiona la tecla y luego realiza el HABLA IMAGINADA", height_mod=100, color_mod="green")
         if current_level == 0 or current_level == 4:
-            tutorial_text = font.render("ARRIBA", True, "white")
-            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
-            tutorial_text = font.render("Moverá el personaje hacia arriba.", True, "white")
-            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
-        elif current_level == 2 or current_level == 6:
-            tutorial_text = font.render("ABAJO", True, "white")
-            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
-            tutorial_text = font.render("Moverá al personaje hacia abajo.", True, "white")
-            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
+            print_direction_instructions(direction_word="ARRIBA", complementary_text="Moverá el personaje hacia arriba")
         elif current_level == 1 or current_level == 5:
-            tutorial_text = font.render("DERECHA", True, "white")
-            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
-            tutorial_text = font.render("Moverá al personaje hacia su derecha.", True, "white")
-            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
+            print_direction_instructions(direction_word="DERECHA", complementary_text="Moverá al personaje hacia su derecha")
+        elif current_level == 2 or current_level == 6:
+            print_direction_instructions(direction_word="ABAJO",
+                                         complementary_text="Moverá al personaje hacia abajo")
         elif current_level == 3 or current_level == 7:
-            tutorial_text = font.render("IZQUIERDA", True, "white")
-            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
-            tutorial_text = font.render("Moverá al personaje hacia su izquierda.", True, "white")
-            screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
+            print_direction_instructions(direction_word="IZQUIERDA",
+                                         complementary_text="Moverá al personaje hacia su izquierda")
         if game_won:
             pygame.draw.rect(screen, "lightgrey", [WIDTH*.05, HEIGHT*.1, WIDTH*.9, HEIGHT*.8], 0, 10)
             pygame.draw.rect(screen, "lightpink4", [WIDTH*.1, HEIGHT*.2, WIDTH*.8, HEIGHT*.6], 0, 10)
@@ -240,41 +245,43 @@ def calibration_tutorial():
     def change_colors() -> None:
 
         if len(commands_list)>= 0:
-            # Green (Imagined Speech)
-            draw_misc()
 
-            pygame.draw.rect(
-                screen,
-                "green",
-                [center_x - xscale, center_y - yscale, 60, 60],
-                border_radius=10,
-            )
+            if current_level < 4 or current_level == 8 or current_level ==9:
+                # Green (Imagined Speech)
+                draw_misc()
 
-            draw_player(last_direction)
+                pygame.draw.rect(
+                    screen,
+                    "green",
+                    [center_x - xscale, center_y - yscale, 60, 60],
+                    border_radius=10,
+                )
 
-            if first_movement==True:
-                movement_command = current_command
-                if current_command == 'right':  # Right
-                    screen.blit(arrow_images[0], (player_x + xscale, player_y))
-                elif current_command == 'left':  # Left
-                    screen.blit(arrow_images[1], (player_x - xscale, player_y))
-                elif current_command == 'up':  # Up
-                    screen.blit(arrow_images[2], (player_x, player_y - yscale))
-                elif current_command == 'down':  # Down
-                    screen.blit(arrow_images[3], (player_x, player_y + yscale))
-            else:
-                movement_command = commands_list[0]
-                if commands_list[0] == 'right':  # Right
-                    screen.blit(arrow_images[0], (player_x + xscale, player_y))
-                elif commands_list[0] == 'left':  # Left
-                    screen.blit(arrow_images[1], (player_x - xscale, player_y))
-                elif commands_list[0] == 'up':  # Up
-                    screen.blit(arrow_images[2], (player_x, player_y - yscale))
-                elif commands_list[0] == 'down':  # Down
-                    screen.blit(arrow_images[3], (player_x, player_y + yscale))
+                draw_player(last_direction)
 
-            pygame.display.flip()
-            time.sleep(1.4)
+                if first_movement==True:
+                    movement_command = current_command
+                    if current_command == 'right':  # Right
+                        screen.blit(arrow_images[0], (player_x + xscale, player_y))
+                    elif current_command == 'left':  # Left
+                        screen.blit(arrow_images[1], (player_x - xscale, player_y))
+                    elif current_command == 'up':  # Up
+                        screen.blit(arrow_images[2], (player_x, player_y - yscale))
+                    elif current_command == 'down':  # Down
+                        screen.blit(arrow_images[3], (player_x, player_y + yscale))
+                else:
+                    movement_command = commands_list[0]
+                    if commands_list[0] == 'right':  # Right
+                        screen.blit(arrow_images[0], (player_x + xscale, player_y))
+                    elif commands_list[0] == 'left':  # Left
+                        screen.blit(arrow_images[1], (player_x - xscale, player_y))
+                    elif commands_list[0] == 'up':  # Up
+                        screen.blit(arrow_images[2], (player_x, player_y - yscale))
+                    elif commands_list[0] == 'down':  # Down
+                        screen.blit(arrow_images[3], (player_x, player_y + yscale))
+
+                pygame.display.flip()
+                time.sleep(1.4)
 
             # Blue (Auditory Speech)
             screen.fill("black")
@@ -376,7 +383,6 @@ def calibration_tutorial():
         center_x = int(player_x + xscale // 2)
         center_y = int(player_y + yscale // 2)
 
-        # FIX POSITIONS
         # Tutorial
         if current_level==2 and moving:
             direction = 3
@@ -474,4 +480,4 @@ def calibration_tutorial():
                 run = False
 
         pygame.display.flip()
-    #pygame.quit()
+    #pygame.quit() # We don't quit so it returns to the menu

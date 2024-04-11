@@ -445,13 +445,13 @@ path_3=[
 ]
 
 # Tutorial
-start_avanzar_0=[16,16,2]
-start_avanzar_1=[16,16,0]
-start_retroceder_0=[16,13,2]
-start_retroceder_1=[19,16,0]
-start_derecha_0=[16,16,1]
+start_arriba_0=[16, 16, 2]
+start_derecha_0=[16, 16, 0]
+start_abajo_0=[16, 13, 2]
+start_izquierda_0=[19, 16, 0]
+start_arriba_1=[16, 16, 1]
 start_derecha_1=[16,16,2]
-start_izquierda_0=[16,13,1]
+start_abajo_1=[16, 13, 1]
 start_izquierda_1=[19,16,2]
 
 # Examples
@@ -467,13 +467,13 @@ start_3 = [16, 35, 2]
 
 
 # Commands
-path_commands_avanzar_0=['up']
-path_commands_avanzar_1=['right']
-path_commands_retroceder_0=['down']
-path_commands_retroceder_1=['left']
-path_commands_derecha_0=['up']
+path_commands_arriba_0=['up']
+path_commands_derecha_0=['right']
+path_commands_abajo_0=['down']
+path_commands_izquierda_0=['left']
+path_commands_arriba_1=['up']
 path_commands_derecha_1=['right']
-path_commands_izquierda_0=['down']
+path_commands_abajo_1=['down']
 path_commands_izquierda_1=['left']
 path_commands_0 = ['right', 'down', 'up', 'up', 'down', 'right']
 path_commands_01= ['up', 'down', 'right', 'left', 'left', 'right', 'down']
@@ -523,18 +523,18 @@ start_positions_paradigm_SI=[start_1, start_2,start_3]
 commands_list_board =[path_commands_1, path_commands_2, path_commands_3]
 
 # Tutorial
-boards_tutorial=[path_ar_0,path_ar_1, # Tutorial AVANZAR
-                 path_ar_0,path_ar_1, # Tutorial RETROCEDER
-                 path_ar_0,path_ar_1, # Tutorial DERECHA
-                 path_ar_0,path_ar_1, # Tutorial IZQUIERDA
+boards_tutorial=[path_ar_0,path_ar_1,
+                 path_ar_0,path_ar_1,
+                 path_ar_0,path_ar_1,
+                 path_ar_0,path_ar_1,
                  path_0,path_01,path_02,path_03]
-start_positions_tutorial=[start_avanzar_0, start_avanzar_1,  # Tutorial AVANZAR
-                          start_retroceder_0, start_retroceder_1,  # Tutorial RETROCEDER
-                          start_derecha_0, start_derecha_1, # Tutorial DERECHA
-                          start_izquierda_0, start_izquierda_1, # Tutorial DERECHA
-                          start_0,start_01,start_02,start_03] 
-commands_list_tutorial =[path_commands_avanzar_0, path_commands_avanzar_1, # Tutorial AVANZAR
-                         path_commands_retroceder_0, path_commands_retroceder_1,  # Tutorial RETROCEDER
-                         path_commands_derecha_0, path_commands_derecha_1, # Tutorial DERECHA
-                         path_commands_izquierda_0, path_commands_izquierda_1, 
-                         path_commands_0,path_commands_01,path_commands_02,path_commands_03]
+start_positions_tutorial=[start_arriba_0, start_derecha_0,
+                          start_abajo_0, start_izquierda_0,
+                          start_arriba_1, start_derecha_1,
+                          start_abajo_1, start_izquierda_1,
+                          start_0, start_01, start_02, start_03]
+commands_list_tutorial =[path_commands_arriba_0, path_commands_derecha_0,
+                         path_commands_abajo_0, path_commands_izquierda_0,
+                         path_commands_arriba_1, path_commands_derecha_1,
+                         path_commands_abajo_1, path_commands_izquierda_1,
+                         path_commands_0, path_commands_01, path_commands_02, path_commands_03]
