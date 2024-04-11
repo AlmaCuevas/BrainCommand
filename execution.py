@@ -55,9 +55,9 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         execution_boards = singleplayer_execution_boards
 
     if process_mode:
-        clf_1 = pickle.load(open('BrainCommand/assets/classifier_data/calibration1_sub{:02d}.pkl'.format(player1_subject_id), 'rb'))
+        clf_1 = pickle.load(open(f'{ASSETS_PATH}/classifier_data/calibration1_sub{int(player1_subject_id):02d}.pkl', 'rb'))
         if game_mode == 'Multiplayer':
-            clf_2 = pickle.load(open('BrainCommand/assets/classifier_data/calibration1_sub{:02d}.pkl'.format(player2_subject_id), 'rb'))
+            clf_2 = pickle.load(open(f'{ASSETS_PATH}/classifier_data/calibration1_sub{int(player2_subject_id):02d}.pkl', 'rb'))
 
     if not dev_mode:
         mrkstream_out = lsl_mrk_outlet('Task_Markers')  # important this is first
