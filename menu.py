@@ -1,6 +1,6 @@
 import pygame
 import execution
-import calibration_tutorial
+import tutorial
 
 class Menu():
     def __init__(self, game, dev_mode: bool = False, player1_ID: int = 0, player2_ID: int = 0):
@@ -98,7 +98,7 @@ class MainMenu(Menu):
             sound_start.play()
             if self.state == 'Tutorial':
                 self.game.playing = True
-                calibration_tutorial.calibration_tutorial() # No interactive video
+                tutorial.tutorial()  # No interactive video
             elif self.state == 'Calibration':
                 self.game.playing = True
                 execution.play_game(game_mode='Calibration 1', dev_mode=self.dev_mode) # With keys

@@ -11,18 +11,14 @@ import time
 import pylsl
 import os
 import numpy as np
-import pickle
+import joblib
 
 # The report file will only be saved when the game finishes without quitting.
 # You don't have to close or open a new game to select a different mode.
 
-# TODO: The menu should be able to call the training and return a 'done.' message (that means the tutorial cant run? maybe run the tutorial in another computer?):
+# TODO: Training should happen after finishing calibration (CALL CUTOMIZED_PROBS IN A FILE THAT RETURNS THE PKL CLF)
 #       TODO: Right after saving the file with calibration, the training should load it and start immediately.
-            # TODO: I can't do that until I know which device I am using and what output they provide.
-#       TODO: The training models should save themselves and then be able to load independently of multiplayer or singleplayer
-
-# TODO: Once you have that, send the EEG piece to the processing and receive the answer (in execution version)
-# TODO: Run the full calibration with training and then testing with executions (both multiplayer and singleplayer)
+            # TODO: I can't do that until I know which device I am using and what output (EDF? MAT?) they provide.
 
 # LSL COMMUNICATION
 def lsl_mrk_outlet(name, number_subject=''):
@@ -55,9 +51,9 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         execution_boards = singleplayer_execution_boards
 
     if process_mode:
-        clf_1 = pickle.load(open(f'{ASSETS_PATH}/classifier_data/calibration1_sub{int(player1_subject_id):02d}.pkl', 'rb'))
+        clf_1 = joblib.load(open(f'assets/classifier_data/calibration1_sub{int(player1_subject_id):02d}.pkl', 'rb'))
         if game_mode == 'Multiplayer':
-            clf_2 = pickle.load(open(f'{ASSETS_PATH}/classifier_data/calibration1_sub{int(player2_subject_id):02d}.pkl', 'rb'))
+            clf_2 = joblib.load(open(f'assets/classifier_data/calibration1_sub{int(player2_subject_id):02d}.pkl', 'rb'))
 
     if not dev_mode:
         mrkstream_out = lsl_mrk_outlet('Task_Markers')  # important this is first

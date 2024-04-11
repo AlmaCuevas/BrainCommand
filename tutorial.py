@@ -4,7 +4,7 @@ import pygame
 import math
 import time
 
-def calibration_tutorial():
+def tutorial():
     # GAME
     pygame.init()
     current_level = 0  # Inicialmente, el nivel 0 está en juego
