@@ -96,8 +96,9 @@ if __name__ == "__main__":
                 }
 
     subject_id = 0
+    game_mode = 'calibration1'
     print(subject_id)
     data, labels = load_data(dataset_info, subject_id)
     classifier, acc = simple_train(data, labels)
-    joblib.dump(classifier, f'assets/classifier_data/calibration1_sub{subject_id:02d}.pkl')
+    joblib.dump(classifier, f'assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}.pkl')
 
