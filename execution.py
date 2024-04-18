@@ -52,19 +52,22 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         execution_boards = singleplayer_execution_boards
 
     if process_mode:
-        clf_1 = joblib.load(open(f'assets/classifier_data/calibration1_sub{player1_subject_id:02d}.pkl', 'rb'))
-        if game_mode == 'multiplayer':
+        if game_mode=='calibration2' or game_mode == 'singleplayer':
+            clf_1 = joblib.load(open(f'assets/classifier_data/calibration1_sub{player1_subject_id:02d}.pkl', 'rb'))
+        elif game_mode == 'multiplayer':
             clf_2 = joblib.load(open(f'assets/classifier_data/calibration1_sub{player2_subject_id:02d}.pkl', 'rb'))
+    else:
+        clf_1 = None
+        clf_2 = None
 
     if not dev_mode:
         eeg_1_in = lsl_inlet('player', 1)  # Don't use special characters or uppercase for the name
         if game_mode == 'multiplayer':
             eeg_2_in = lsl_inlet('player', 2)  # Don't use special characters or uppercase for the name
 
-
     # GAME
     pygame.init()
-    current_level: int = 0  # Inicialmente, el nivel 0 está en juego
+    current_level: int = 0
     # Dimensions
     display_info = pygame.display.Info()  # Get the monitor's display info
     WIDTH = int(display_info.current_h)
@@ -114,7 +117,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
     prediction_movement_2: int = start_2[2]
     player_2_last_activate_turn_tile: list[int] = [4, 4]
     player_2_time_to_corner: int = 0
-    corner_color = 'green'
+    corner_color = 'blue'
 
     ## Images import
     player_1_images: list = [
@@ -159,9 +162,9 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         original_speed: int = 5
         player_2_speed: int = 5
     else:
-        player_1_speed: int = 10
-        original_speed: int = 10
-        player_2_speed: int = 10
+        player_1_speed: int = 5
+        original_speed: int = 5
+        player_2_speed: int = 5
     moving: bool = False
     startup_counter: int = 0
     counter: int = 0
@@ -173,9 +176,9 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
     player_1_time_to_corner: int = 0
     cookie_winner: list = []
     cookie_winner_2_num: int = 0
-    calibration_moving_flag = True
-    start_time_eeg_1 = 0
-    start_time_eeg_2 = 0
+    moving_flag_1: bool = True
+    start_time_eeg_1: float = 0
+    start_time_eeg_2: float = 0
 
     def draw_text(text: str):
         font = pygame.font.Font("RetroFont.ttf", 300)
@@ -214,7 +217,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
 
 
     def check_collisions(last_activate_turn_tile, player_speed, time_to_corner, turns_allowed, direction, center_x,
-                         center_y, level, player_num, calibration_moving_flag: bool = True):
+                         center_y, level, player_num, start_player_time, calibration_moving_flag: bool = True):
         cookie_winner_num = 0
         if player_num == 2:
             right_volume = 0
@@ -232,6 +235,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         if sum(corner_check) >= 2 or corner_check == turns_allowed:
             if level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] != -1 * player_num and time_to_corner > 10:
                 channel.play(sound_thud)
+                start_player_time = time.time()
                 channel.set_volume(right_volume, left_volume)
                 level[center_y // yscale][center_x // xscale] = -1 * player_num
                 last_activate_turn_tile = [center_y // yscale, center_x // xscale]
@@ -242,11 +246,11 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
             player_speed = original_speed
             time_to_corner = 0
-        return last_activate_turn_tile, player_speed, time_to_corner, level, cookie_winner_num
+        return last_activate_turn_tile, player_speed, time_to_corner, level, cookie_winner_num, start_player_time
 
-    def draw_player(direction, last_direction, player_x, player_y, player_images, calibration_moving_flag: bool = True):
+    def draw_player(direction, last_direction, player_x, player_y, player_images, moving_flag: bool = True):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
-        if calibration_moving_flag:
+        if moving_flag:
             for direction_idx in range(0, 4):
                 if direction_idx == direction:
                     last_direction = direction
@@ -255,38 +259,38 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             screen.blit(player_images[last_direction], (player_x - xscale/2, player_y - yscale/2))
         return last_direction
 
-    def check_position(direction, centerx, centery, level):
+    def check_position(direction: int, center_x: int, center_y: int, level: list) -> list[bool]:
         turns = [False, False, False, False]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
         half_scale = xscale // 2 + 5
         if direction == 2 or direction == 3:
-            if xscale // 3 <= centerx % xscale <= xscale:
-                if level[(centery + half_scale) // yscale][centerx // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'pink', (centerx, (centery + half_scale)), 20, 1)
+            if xscale // 3 <= center_x % xscale <= xscale:
+                if level[(center_y + half_scale) // yscale][center_x // xscale] < 3:
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y + half_scale)), 20, 1)
                     turns[3] = True
-                if level[(centery - half_scale - 10) // yscale][centerx // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'pink', (centerx, (centery - half_scale - 10)), 20, 1)
+                if level[(center_y - half_scale - 10) // yscale][center_x // xscale] < 3:
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y - half_scale - 10)), 20, 1)
                     turns[2] = True
-            if yscale // 3 <= centery % yscale <= yscale:
-                if level[centery // yscale][(centerx - xscale) // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'pink', (centerx - xscale, centery), 20, 1)
+            if yscale // 3 <= center_y % yscale <= yscale:
+                if level[center_y // yscale][(center_x - xscale) // xscale] < 3:
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x - xscale, center_y), 20, 1)
                     turns[1] = True
-                if level[centery // yscale][(centerx + xscale) // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'pink', (centerx + xscale, centery), 20, 1)
+                if level[center_y // yscale][(center_x + xscale) // xscale] < 3:
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x + xscale, center_y), 20, 1)
                     turns[0] = True
         elif direction == 0 or direction == 1:
-            if xscale // 3 <= centerx % xscale <= xscale:
-                if level[(centery + yscale) // yscale][centerx // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'green', (centerx, centery + yscale), 20, 1)
+            if xscale // 3 <= center_x % xscale <= xscale:
+                if level[(center_y + yscale) // yscale][center_x // xscale] < 3:
+                    if dev_mode: pygame.draw.circle(screen, 'green', (center_x, center_y + yscale), 20, 1)
                     turns[3] = True
-                if level[(centery - yscale) // yscale][centerx // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'green', (centerx, centery - yscale), 20, 1)
+                if level[(center_y - yscale) // yscale][center_x // xscale] < 3:
+                    if dev_mode: pygame.draw.circle(screen, 'green', (center_x, center_y - yscale), 20, 1)
                     turns[2] = True
-            if yscale // 3 <= centery % yscale <= yscale:
-                if level[centery // yscale][(centerx - half_scale - 8) // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'white', ((centerx - half_scale - 8), centery), 20, 1)
+            if yscale // 3 <= center_y % yscale <= yscale:
+                if level[center_y // yscale][(center_x - half_scale - 8) // xscale] < 3:
+                    if dev_mode: pygame.draw.circle(screen, 'white', ((center_x - half_scale - 8), center_y), 20, 1)
                     turns[1] = True
-                if level[centery // yscale][(centerx + half_scale) // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'red', ((centerx + half_scale), centery), 20, 1)
+                if level[center_y // yscale][(center_x + half_scale) // xscale] < 3:
+                    if dev_mode: pygame.draw.circle(screen, 'red', ((center_x + half_scale), center_y), 20, 1)
                     turns[0] = True
         return turns
 
@@ -303,7 +307,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             play_y += player_speed
         return play_x, play_y
 
-    def draw_board(level: list, color: str, corner_color: str, center_1_x: float, center_1_y: float, center_2_x: float = 0, center_2_y: float = 0):
+    def draw_board(level: list, color: str, corner_color: str, center_1_x: int, center_1_y: int, center_2_x: int = 0, center_2_y: int = 0):
         for i in range(len(level)):
             for j in range(len(level[i])):
                 if level[i][j] == 1:
@@ -401,6 +405,35 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                     )
         return level
 
+    def decision_maker(eeg_in, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict[str], player_direction_command: int, player_level_turns: list[bool], clf = None):
+        ## Section to process direction prediction with the EEG.
+        movement_option = [0, 1, 2, 3]
+        if time.time() - start_time_eeg > 1.4 and player_speed == 0:
+            eeg, t_eeg = eeg_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
+            if eeg:
+                if process_mode:
+                    probs_array = clf.predict_proba(eeg)
+                    valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)]
+                    prediction_movement_1 = np.argmax(
+                        valid_array)  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
+                else:
+                    allowed_movement_random = [x for x, flag in zip(movement_option, player_turns_allowed) if
+                                                 flag]
+                    prediction_movement_1 = allowed_movement_random[
+                        random.randint(0, len(allowed_movement_random) - 1)]  # exclusive range
+
+                player_eeg_data['time'].append(eeg)
+                player_eeg_data['class'].append(player_1_direction)
+                player_eeg_data['game index'].append(len(player_1_total_game_turns))
+                player_eeg_data['movement index'].append(len(player_level_turns))
+                print(f'Classifier returned: {prediction_movement_1}')
+
+                player_level_turns.append(player_direction_command)
+                player_direction_command = prediction_movement_1
+                player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
+
+        return player_speed, player_direction_command, player_level_turns, player_eeg_data
+
     run = True
     start_time = time.time() # In case you are running dev_mode
     while run:
@@ -428,11 +461,11 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         else:
             moving = True
 
-        player_1_center_x = player_1_player_x + xscale // 2
-        player_1_center_y = player_1_player_y + yscale // 2
+        player_1_center_x: int = player_1_player_x + xscale // 2
+        player_1_center_y: int = player_1_player_y + yscale // 2
         if game_mode == 'multiplayer':
-            player_2_center_x = player_2_player_x + xscale // 2
-            player_2_center_y = player_2_player_y + yscale // 2
+            player_2_center_x: int = player_2_player_x + xscale // 2
+            player_2_center_y: int = player_2_player_y + yscale // 2
             level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y, player_2_center_x, player_2_center_y)
         else:
             level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y)
@@ -440,21 +473,23 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         draw_misc(cookie_winner[-1:], game_mode)
 
         if moving and not game_won and not game_over:
-            player_1_last_direction = draw_player(player_1_direction, player_1_last_direction, player_1_player_x, player_1_player_y, player_1_images, calibration_moving_flag)
+            player_1_last_direction = draw_player(player_1_direction, player_1_last_direction, player_1_player_x, player_1_player_y, player_1_images, moving_flag_1)
             if game_mode == 'multiplayer': player_2_last_direction = draw_player(player_2_direction, player_2_last_direction, player_2_player_x, player_2_player_y, player_2_images)
 
 
 
             player_1_turns_allowed = check_position(player_1_direction, player_1_center_x, player_1_center_y, level)
-            if game_mode == 'multiplayer': player_2_turns_allowed = check_position(player_2_direction, player_2_center_x, player_2_center_y, level)
+            if game_mode == 'multiplayer': player_2_turns_allowed = check_position(player_2_direction,
+                                                                                   player_2_center_x, player_2_center_y,
+                                                                                   level)
 
             if game_mode == 'calibration1':
-                if player1_eeg_data['movement index'][-1] != len(player_1_level_turns) or not calibration_moving_flag:  # Valid direction or already EEG caption in process
-                    calibration_moving_flag = False
+                if player1_eeg_data['movement index'][-1] != len(player_1_level_turns) or not moving_flag_1:  # Valid direction or already EEG caption in process
+                    moving_flag_1 = False
                     if time.time() - start_time_eeg_1 > 0.5:  # always 0.5s after deciding with the arrow key
                         corner_color = 'blue'
                         if dev_mode:
-                            calibration_moving_flag = True
+                            moving_flag_1 = True
                         elif time.time() - start_time_eeg_1 > (0.5 + 1.4):  # After giving the user 1.4s for the IS
                             eeg_1, t_eeg_1 = eeg_1_in.pull_chunk(timeout=0,
                                                                  max_samples=int(1.4 * fs))  # Take the last 1.4 seconds
@@ -463,68 +498,26 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                                 player1_eeg_data['movement index'].append(len(player_1_level_turns))
                                 player1_eeg_data['class'].append(player_1_direction)
                                 player1_eeg_data['time'].append(eeg_1)
-                                calibration_moving_flag = True
+                                moving_flag_1 = True
                 else:
                     corner_color = 'green'
                     start_time_eeg_1 = time.time()
 
-
-            ## Section to process direction prediction with the EEG.
-            # TODO: Put it in a Function and call it instead
             if not dev_mode and game_mode != 'calibration1':
-                movement_option = [0, 1, 2, 3]
-                if time.time() - start_time_eeg_1 > 1.4 and player_1_speed == 0:
-                    eeg_1, t_eeg_1 = eeg_1_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
-
-                    if process_mode:
-                        probs_array = clf_1.predict_proba(eeg_1)
-                        valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_1_turns_allowed)]
-                        prediction_movement_1 = np.argmax(valid_array) # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
-                    else:
-                        allowed_1_movement_random = [x for x, flag in zip(movement_option, player_1_turns_allowed) if flag]
-                        prediction_movement_1 = allowed_1_movement_random[random.randint(0, len(allowed_1_movement_random)-1)] # exclusive range
-
-                    print(f'Player 1. Classifier returned: {prediction_movement_1}')
-
-                    if eeg_1:
-                        player1_eeg_data['time'].append(eeg_1)
-                        player1_eeg_data['class'].append(player_1_direction)
-                        player1_eeg_data['game index'].append(len(player_1_total_game_turns))
-                        player1_eeg_data['movement index'].append(len(player_1_level_turns))
-
-                    player_1_level_turns.append(player_1_direction_command)
-                    player_1_direction_command = prediction_movement_1
-                    player_1_speed = original_speed
+                player_1_speed, player_1_direction_command, player_1_level_turns, player1_eeg_data = decision_maker(
+                    eeg_1_in, player_1_speed, start_time_eeg_1, player_1_turns_allowed, player1_eeg_data,
+                    player_1_direction_command, player_1_level_turns, clf_1)
                 if game_mode == 'multiplayer':
-                    if time.time() - start_time_eeg_2 > 1.4 and player_2_speed == 0:
-                        start_time_eeg_2 = 0
-                        if process_mode:
-                            probs_array = clf_2.predict_proba(eeg_2)
-                            valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_2_turns_allowed)]
-                            prediction_movement_2 = np.argmax(valid_array)
-                        else:
-                            allowed_2_movement_random = [x for x, flag in zip(movement_option, player_2_turns_allowed) if flag]
-                            prediction_movement_2 = allowed_2_movement_random[
-                                random.randint(0, len(allowed_2_movement_random) - 1)]  # exclusive range
-                        print(f'Player 2. Classifier returned: {prediction_movement_2}')
-                        eeg_2, t_eeg_2 = eeg_2_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
-                        if eeg_2:
-                            player2_eeg_data['time'].append(eeg_2)
-                            player2_eeg_data['class'].append(player_2_direction)
-                            player1_eeg_data['game index'].append(len(player_2_total_game_turns))
-                            player1_eeg_data['movement index'].append(len(player_2_level_turns))
-                        player_2_speed = original_speed
+                    player_2_speed, player_2_direction_command, player_2_level_turns, player2_eeg_data = decision_maker(
+                        eeg_2_in, player_2_speed, start_time_eeg_2, player_2_turns_allowed, player2_eeg_data,
+                        player_2_direction_command, player_2_level_turns, clf_2)
 
-                        player_2_level_turns.append(player_2_direction_command)
-                        player_2_direction_command = prediction_movement_2
-
-
-            if calibration_moving_flag:
+            if moving_flag_1:
                 player_1_player_x, player_1_player_y = move_player(player_1_direction, player_1_turns_allowed, player_1_player_x, player_1_player_y, player_1_speed)
-                if game_mode == 'multiplayer': player_2_player_x, player_2_player_y = move_player(player_2_direction, player_2_turns_allowed, player_2_player_x, player_2_player_y, player_2_speed)
+            if game_mode == 'multiplayer': player_2_player_x, player_2_player_y = move_player(player_2_direction, player_2_turns_allowed, player_2_player_x, player_2_player_y, player_2_speed)
 
-            player_1_last_activate_turn_tile, player_1_speed, player_1_time_to_corner, level, cookie_winner_1_num = check_collisions(player_1_last_activate_turn_tile, player_1_speed, player_1_time_to_corner, player_1_turns_allowed, player_1_direction, player_1_center_x, player_1_center_y, level, 1, calibration_moving_flag)
-            if game_mode == 'multiplayer': player_2_last_activate_turn_tile, player_2_speed, player_2_time_to_corner, level, cookie_winner_2_num = check_collisions(player_2_last_activate_turn_tile, player_2_speed, player_2_time_to_corner, player_2_turns_allowed, player_2_direction, player_2_center_x, player_2_center_y, level, 2)
+            player_1_last_activate_turn_tile, player_1_speed, player_1_time_to_corner, level, cookie_winner_1_num, start_time_eeg_1 = check_collisions(player_1_last_activate_turn_tile, player_1_speed, player_1_time_to_corner, player_1_turns_allowed, player_1_direction, player_1_center_x, player_1_center_y, level, 1, start_time_eeg_1, moving_flag_1)
+            if game_mode == 'multiplayer': player_2_last_activate_turn_tile, player_2_speed, player_2_time_to_corner, level, cookie_winner_2_num, start_time_eeg_2 = check_collisions(player_2_last_activate_turn_tile, player_2_speed, player_2_time_to_corner, player_2_turns_allowed, player_2_direction, player_2_center_x, player_2_center_y, level, 2, start_time_eeg_2)
 
 
             ## Section to decide if the game is finished.
@@ -667,10 +660,14 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             pd.DataFrame(player2_eeg_data).to_csv(
                 f'assets/game_saved_files/eeg_data_{game_mode}_sub{player2_subject_id:02d}.csv')
 
-        file = open(f'assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}.txt', 'w')
+        if game_mode != 'multiplayer':
+            file = open(f'assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}.txt', 'w')
+        else:
+            file = open(f'assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}_and_sub_{player2_subject_id:02d}.txt', 'w')
         file.write(f'game_mode, {game_mode}\n')
         file.write(f'total_game_time, {total_game_time}\n')
         file.write(f'cookie_winner, {cookie_winner}\n')
         file.write(f'player_1_turns, {player_1_total_game_turns}\n')
         file.write(f'player_2_turns, {player_2_total_game_turns}\n')
         file.close()
+    print("Congrats! Game finished :D")

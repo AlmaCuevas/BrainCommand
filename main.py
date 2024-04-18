@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(description="BrainCommand game. What ID do your
 
 parser.add_argument("--dev_mode", type=bool, help="Are you developing? True/False", required=False, default=False)
 parser.add_argument("--player1", help="Player 1 ID", required=False, default=0)
-parser.add_argument("--player2", type=int, help="Player 2 ID", required=False, default=0)
+parser.add_argument("--player2", type=int, help="Player 2 ID", required=False, default=1)
 
 args = parser.parse_args()
 
