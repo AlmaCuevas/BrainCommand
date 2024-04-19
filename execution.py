@@ -23,33 +23,34 @@ import pandas as pd
 
 # LSL COMMUNICATIONtlet
 
-def lsl_inlet(name, number_subject=''):
+def lsl_inlet(name, number_subject: int = 1):
     info = pylsl.resolve_stream('name', name + str(number_subject))
     inlet = pylsl.stream_inlet(info[0], recover=False)
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
     return inlet
 
 def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False, player1_subject_id: int = 0, player2_subject_id: int = 0):
+    fs: int = 250
+
     player1_eeg_data: dict = {'time': [], 'class':[], 'movement index':[0], 'game index':[]}
     player1_subject_id = int(player1_subject_id)
-
-    player2_eeg_data: dict = {'time': [], 'class': [], 'movement index':[0], 'game index':[]}
-    player2_subject_id = int(player2_subject_id)  # Reiterate that its int, during the previous process it become str
-
-    fs = 250
 
     if game_mode=='calibration1' or game_mode=='calibration2':
         player_1_start_execution_positions = tutorial_player_1_start_execution_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
         execution_boards = tutorial_execution_boards
-    elif game_mode == 'multiplayer':
-        player_1_start_execution_positions = multiplayer_player_1_start_execution_positions
-        player_2_start_execution_positions = multiplayer_player_2_start_execution_positions
-        execution_boards = multiplayer_execution_boards
     elif game_mode == 'singleplayer':
         player_1_start_execution_positions = singleplayer_start_execution_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
         execution_boards = singleplayer_execution_boards
+    else: # game_mode == 'multiplayer'
+        player_1_start_execution_positions = multiplayer_player_1_start_execution_positions
+        player_2_start_execution_positions = multiplayer_player_2_start_execution_positions
+        execution_boards = multiplayer_execution_boards
+
+        player2_eeg_data: dict = {'time': [], 'class': [], 'movement index': [0], 'game index': []}
+        player2_subject_id = int(player2_subject_id)  # It becomes str during the main menu parsing
+
 
     if process_mode:
         if game_mode=='calibration2' or game_mode == 'singleplayer':
@@ -70,10 +71,10 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
     current_level: int = 0
     # Dimensions
     display_info = pygame.display.Info()  # Get the monitor's display info
-    WIDTH = int(display_info.current_h)
-    HEIGHT = int(display_info.current_h)
+    WIDTH: int = int(display_info.current_h)
+    HEIGHT: int = int(display_info.current_h)
 
-    level = copy.deepcopy(execution_boards[current_level])
+    level: list[list[int]] = copy.deepcopy(execution_boards[current_level])
     flat_level_list = [
         x
         for xs in level
@@ -114,7 +115,6 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
     player_2_direction: int = start_2[2]
     player_2_last_direction: int = start_2[2]
     player_2_direction_command: int = start_2[2]
-    prediction_movement_2: int = start_2[2]
     player_2_last_activate_turn_tile: list[int] = [4, 4]
     player_2_time_to_corner: int = 0
     corner_color = 'blue'
@@ -127,15 +127,6 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         pygame.transform.scale(pygame.image.load('assets/extras_images/back_1.png'),
                                (xscale*2, yscale*2))]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
 
-    arrow = pygame.transform.scale(
-        pygame.image.load("assets/extras_images/arrow.png"), (xscale, yscale)
-    )
-    arrow_images = [
-        pygame.transform.rotate(arrow, -90),
-        pygame.transform.rotate(arrow, 90),
-        arrow,
-        pygame.transform.rotate(arrow, 180),
-    ]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
     cookie = pygame.transform.scale(pygame.image.load('assets/extras_images/cookie.png'), (xscale, yscale))
 
     ## Sounds import
@@ -152,7 +143,6 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
     player_1_player_y: int = int(start_1[1] * yscale)
     player_1_direction: int = start_1[2]
     player_1_last_direction: int = start_1[2]
-    prediction_movement_1: int = start_1[2]
     player_1_turns_allowed: list[bool] = [False, False, False, False]
 
     ## Other
@@ -167,8 +157,6 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         player_2_speed: int = 5
     moving: bool = False
     startup_counter: int = 0
-    counter: int = 0
-    flicker: bool = False
     game_over: bool = False
     game_won: bool = False
     play_won_flag: bool = True
@@ -317,7 +305,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                         (j * xscale + (0.5 * xscale), i * yscale + (0.5 * yscale)),
                         4,
                     )
-                if level[i][j] == 2:  # and not flicker: # The flicker could affect the brain frequency
+                if level[i][j] == 2:
                     screen.blit(cookie, (j * xscale, i * yscale))
                 if level[i][j] == 3:
                     pygame.draw.line(
@@ -405,7 +393,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                     )
         return level
 
-    def decision_maker(eeg_in, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict[str], player_direction_command: int, player_level_turns: list[bool], clf = None):
+    def decision_maker(eeg_in, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], clf):
         ## Section to process direction prediction with the EEG.
         movement_option = [0, 1, 2, 3]
         if time.time() - start_time_eeg > 1.4 and player_speed == 0:
@@ -428,7 +416,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                 player_eeg_data['movement index'].append(len(player_level_turns))
                 print(f'Classifier returned: {prediction_movement_1}')
 
-                player_level_turns.append(player_direction_command)
+                player_level_turns.append(player_direction_command) # Save before changing it
                 player_direction_command = prediction_movement_1
                 player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
 
@@ -439,13 +427,6 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
     while run:
         timer.tick(fps)
         screen.fill("black")
-        if counter < 19:
-            counter += 1
-            if counter > 3:
-                flicker = False
-        else:
-            counter = 0
-            flicker = True
         if startup_counter < 200 and not game_over and not game_won and not dev_mode:
             moving = False
             startup_counter += 1
@@ -620,11 +601,11 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                             player_2_direction = start_2[2]
                             player_2_player_x = int(start_2[0] * xscale)
                             player_2_player_y = int(start_2[1] * yscale)
-                            player_2_direction_command = start_2[2]
+                            player_2_direction_command: int = start_2[2]
                         player_1_direction = start_1[2]
                         player_1_player_x = int(start_1[0] * xscale)
                         player_1_player_y = int(start_1[1] * yscale)
-                        player_1_direction_command = start_1[2]
+                        player_1_direction_command: int = start_1[2]
                     game_won = False
                     player_1_level_turns = []
                     if game_mode == 'multiplayer': player_2_level_turns = []
