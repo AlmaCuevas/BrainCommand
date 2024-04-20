@@ -466,23 +466,16 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
 
             if game_mode == 'calibration1':
                 if player1_eeg_data['movement index'][-1] != len(player_1_level_turns) or not moving_flag_1:  # Valid direction or already EEG caption in process
-                    moving_flag_1 = False
-                    if time.time() - start_time_eeg_1 > 0.5:  # always 0.5s after deciding with the arrow key
-                        corner_color = 'blue'
-                        if dev_mode:
-                            moving_flag_1 = True
-                        elif time.time() - start_time_eeg_1 > (0.5 + 1.4):  # After giving the user 1.4s for the IS
-                            eeg_1, t_eeg_1 = eeg_1_in.pull_chunk(timeout=0,
-                                                                 max_samples=int(1.4 * fs))  # Take the last 1.4 seconds
-                            if eeg_1:
-                                player1_eeg_data['game index'].append(len(player_1_total_game_turns))
-                                player1_eeg_data['movement index'].append(len(player_1_level_turns))
-                                player1_eeg_data['class'].append(player_1_direction)
-                                player1_eeg_data['time'].append(eeg_1)
-                                moving_flag_1 = True
+                    # Right after the person click the arrow, we get the last 1.4s when they also thought the movement
+                    eeg_1, t_eeg_1 = eeg_1_in.pull_chunk(timeout=0,
+                                                         max_samples=int(1.4 * fs))  # Take the last 1.4 seconds
+                    if eeg_1:
+                        player1_eeg_data['game index'].append(len(player_1_total_game_turns))
+                        player1_eeg_data['movement index'].append(len(player_1_level_turns))
+                        player1_eeg_data['class'].append(player_1_direction)
+                        player1_eeg_data['time'].append(eeg_1)
                 else:
-                    corner_color = 'green'
-                    start_time_eeg_1 = time.time()
+                    corner_color = 'blue'
 
             if not dev_mode and game_mode != 'calibration1':
                 player_1_speed, player_1_direction_command, player_1_level_turns, player1_eeg_data = decision_maker(
