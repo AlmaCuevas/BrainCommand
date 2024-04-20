@@ -502,7 +502,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
 
 
             ## Section to decide if the game is finished.
-            # TODO: Put it in a Function and call it instead
+            # Suggestion: Put it in a Function and call it instead
             game_won = False
             flat_level_list = [
                 x
