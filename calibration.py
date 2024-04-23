@@ -20,19 +20,19 @@ def bci_calibration(dev_mode: bool = False):
 
     # GAME
     pygame.init()
-    current_level = 0  # Inicialmente, el nivel 0 está en juego
+    current_level:int = 0  # Inicialmente, el nivel 0 está en juego
 
     # Dimensions
     display_info = pygame.display.Info() # Get the monitor's display info
-    WIDTH = int(display_info.current_h)
-    HEIGHT = int(display_info.current_h)
+    WIDTH:int = int(display_info.current_h)
+    HEIGHT:int = int(display_info.current_h)
 
-    level = copy.deepcopy(boards_paradigm_SI[current_level])
+    level:int = copy.deepcopy(boards_paradigm_SI[current_level])
     prompts = copy.deepcopy(prompts_paradigm_SI[current_level])
-    div_width = len(level[0])  # 31
-    div_height = len(level)  # 38
-    num1 = HEIGHT // div_height #23
-    num2 = WIDTH // div_width #29
+    div_width:int = len(level[0])  # 31
+    div_height:int = len(level)  # 38
+    num1:int = HEIGHT // div_height #23
+    num2:int = WIDTH // div_width #29
 
 
     commands_list = commands_list_board.pop(0)
@@ -40,7 +40,7 @@ def bci_calibration(dev_mode: bool = False):
 
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
     timer = pygame.time.Clock()
-    fps = 60  # This decides how fast the game goes.
+    fps:int = 60  # This decides how fast the game goes.
     font = pygame.font.Font("RetroFont.ttf", 30)
     color = "white"
     PI = math.pi
