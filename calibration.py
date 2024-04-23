@@ -95,7 +95,7 @@ def bci_calibration(dev_mode: bool = False):
                         (WIDTH / 2 - prepare_for_next_level.get_width() / 2,
                          HEIGHT / 2 - prepare_for_next_level.get_height() / 2 + 100))
 
-    def command_leader(current_command, player_y, player_x):
+    def command_leader(current_command:str, player_y:int, player_x:int):
         goal_x=player_x
         goal_y=player_y
         if current_command == 'right':  # Right
@@ -108,7 +108,7 @@ def bci_calibration(dev_mode: bool = False):
             goal_y = player_y + num1 * 3
         return goal_x, goal_y
 
-    def check_collisions (last_activate_turn_tile):
+    def check_collisions (last_activate_turn_tile:list):
         level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
         if level[center_y // num1][center_x // num2] == 1:
             level[center_y // num1][center_x // num2] = 0
@@ -116,7 +116,7 @@ def bci_calibration(dev_mode: bool = False):
             level[center_y // num1][center_x // num2] = 0
         return last_activate_turn_tile
 
-    def draw_board(color):
+    def draw_board(color:str):
         for i in range(len(level)):
             for j in range(len(level[i])):
                 if level[i][j] == 1:
@@ -206,7 +206,7 @@ def bci_calibration(dev_mode: bool = False):
 
 
 
-    def draw_player(last_direction):
+    def draw_player(last_direction:str):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
         for direction_idx in range(0,4):
             if direction_idx == direction:
@@ -218,7 +218,7 @@ def bci_calibration(dev_mode: bool = False):
 
 
 
-    def move_player(play_x, play_y):
+    def move_player(play_x:int, play_y:int):
         # r, l, u, d
         # If current direction is right and right is allowed, move right
         if direction == 0 and turns_allowed[0]:
@@ -231,7 +231,7 @@ def bci_calibration(dev_mode: bool = False):
             play_y += player_speed
         return play_x, play_y
 
-    def change_colors(color):
+    def change_colors(color:str):
 
         if len(commands_list)> 0:
             if first_movement==True:

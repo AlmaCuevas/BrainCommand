@@ -103,7 +103,7 @@ def calibration_tutorial():
                         (WIDTH / 2 - prepare_for_next_level.get_width() / 2,
                          HEIGHT / 2 - prepare_for_next_level.get_height() / 2 + 100))
 
-    def command_leader(current_command, player_y, player_x):
+    def command_leader(current_command:str, player_y:int, player_x:int):
         goal_x=player_x
         goal_y=player_y
         if current_command == 'right':  # Right
@@ -116,7 +116,7 @@ def calibration_tutorial():
             goal_y = player_y + num1 * 3
         return goal_x, goal_y
 
-    def check_collisions(last_activate_turn_tile):
+    def check_collisions(last_activate_turn_tile:list):
         level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
         if 0 < player_x < 870:
             if level[center_y // num1][center_x // num2] == 1:
@@ -126,7 +126,7 @@ def calibration_tutorial():
         return last_activate_turn_tile
 
 
-    def draw_board(color):
+    def draw_board(color:str):
         for i in range(len(level)):
             for j in range(len(level[i])):
                 if level[i][j] == 1:
@@ -216,7 +216,7 @@ def calibration_tutorial():
 
 
 
-    def draw_player(last_direction):
+    def draw_player(last_direction:int):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
         for direction_idx in range(0,4):
             if direction_idx == direction:
@@ -226,7 +226,7 @@ def calibration_tutorial():
             screen.blit(player_images[last_direction], (player_x, player_y))
         return last_direction
 
-    def check_position(centerx, centery):
+    def check_position(centerx:float, centery:float):
         turns = [False, False, False, False]
         num3 = 5
         # check collisions based on center x and center y of player +/- fudge number
@@ -274,7 +274,7 @@ def calibration_tutorial():
         return turns
 
 
-    def move_player(play_x, play_y):
+    def move_player(play_x:int, play_y:int):
         # r, l, u, d
         # If current direction is right and right is allowed, move right
         if direction == 0 and turns_allowed[0]:
@@ -287,7 +287,7 @@ def calibration_tutorial():
             play_y += player_speed
         return play_x, play_y
 
-    def change_colors(color):
+    def change_colors(color:str):
 
         if len(commands_list)>= 0:
             if first_movement==True:

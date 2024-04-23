@@ -23,14 +23,14 @@ import os
 # TODO: Run the full calibration with training and then testing with executions (both multiplayer and singleplayer)
 
 # LSL COMMUNICATION
-def lsl_mrk_outlet(name, number_subject=''):
+def lsl_mrk_outlet(name:str, number_subject:int=''):
     info = pylsl.stream_info(name + str(number_subject), 'Markers', 1, 0, pylsl.cf_string, 'ID0123456789')
     outlet = pylsl.stream_outlet(info, 1, 1)
     print(f'Brain Command created result outlet: {name}, for Player {number_subject}.')
     return outlet
 
 
-def lsl_inlet(name, number_subject=''):
+def lsl_inlet(name:str, number_subject:int=''):
     info = pylsl.resolve_stream('name', name + str(number_subject))
     inlet = pylsl.stream_inlet(info[0], recover=False)
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
@@ -217,8 +217,8 @@ def play_game(game_mode: str, dev_mode: bool = False):
                         (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2))
 
 
-    def check_collisions(last_activate_turn_tile, player_speed:int, time_to_corner:int, turns_allowed, direction, center_x,
-                         center_y, level, player_num:int, start_time, calibration_moving_flag: bool = True):
+    def check_collisions(last_activate_turn_tile:list, player_speed:int, time_to_corner:int, turns_allowed, direction:int, center_x:float,
+                         center_y:float, level:list, player_num:int, start_time, calibration_moving_flag: bool = True):
         cookie_winner_num = 0
         if player_num == 2:
             right_volume = 0
@@ -250,7 +250,7 @@ def play_game(game_mode: str, dev_mode: bool = False):
             time_to_corner = 0
         return last_activate_turn_tile, player_speed, time_to_corner, level, cookie_winner_num, start_time
 
-    def draw_player(direction:int, last_direction:int, player_x, player_y, player_images, calibration_moving_flag: bool = True):
+    def draw_player(direction:int, last_direction:int, player_x:float, player_y:float, player_images, calibration_moving_flag: bool = True):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
         if calibration_moving_flag:
             for direction_idx in range(0, 4):
@@ -261,7 +261,7 @@ def play_game(game_mode: str, dev_mode: bool = False):
             screen.blit(player_images[last_direction], (player_x - xscale/2, player_y - yscale/2))
         return last_direction
 
-    def check_position(direction:int, centerx, centery, level):
+    def check_position(direction:int, centerx:float, centery:float, level:list):
         turns = [False, False, False, False]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
         half_scale = xscale // 2 + 5
         if direction == 2 or direction == 3:
@@ -296,7 +296,7 @@ def play_game(game_mode: str, dev_mode: bool = False):
                     turns[0] = True
         return turns
 
-    def move_player(direction:int, turns_allowed, play_x, play_y, player_speed):
+    def move_player(direction:int, turns_allowed, play_x:int, play_y:int, player_speed:int):
         # r, l, u, d
         # If current direction is right and right is allowed, move right
         if direction == 0 and turns_allowed[0]:
