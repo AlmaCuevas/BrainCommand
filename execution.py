@@ -23,7 +23,7 @@ import pandas as pd
 
 # LSL COMMUNICATIONtlet
 
-def lsl_inlet(name, number_subject: int = 1):
+def lsl_inlet(name:str, number_subject: int = 1):
     info = pylsl.resolve_stream('name', name + str(number_subject))
     inlet = pylsl.stream_inlet(info[0], recover=False)
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
@@ -204,8 +204,8 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                         (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2))
 
 
-    def check_collisions(last_activate_turn_tile, player_speed, time_to_corner, turns_allowed, direction, center_x,
-                         center_y, level, player_num, start_player_time, calibration_moving_flag: bool = True):
+    def check_collisions(last_activate_turn_tile:list, player_speed:int, time_to_corner:int, turns_allowed, direction:int, center_x:float,
+                         center_y:float, level:list, player_num:int, start_player_time, calibration_moving_flag: bool = True):
         cookie_winner_num = 0
         if player_num == 2:
             right_volume = 0
@@ -236,7 +236,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             time_to_corner = 0
         return last_activate_turn_tile, player_speed, time_to_corner, level, cookie_winner_num, start_player_time
 
-    def draw_player(direction, last_direction, player_x, player_y, player_images, moving_flag: bool = True):
+    def draw_player(direction:int, last_direction:int, player_x:float, player_y:float, player_images, moving_flag: bool = True):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
         if moving_flag:
             for direction_idx in range(0, 4):
@@ -282,7 +282,7 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
                     turns[0] = True
         return turns
 
-    def move_player(direction, turns_allowed, play_x, play_y, player_speed):
+    def move_player(direction:int, turns_allowed, play_x:int, play_y:int, player_speed:int):
         # r, l, u, d
         # If current direction is right and right is allowed, move right
         if direction == 0 and turns_allowed[0]:

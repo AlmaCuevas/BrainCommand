@@ -107,7 +107,7 @@ def tutorial():
                         (WIDTH / 2 - prepare_for_next_level.get_width() / 2,
                          HEIGHT / 2 - prepare_for_next_level.get_height() / 2 + 100))
 
-    def command_leader(current_command, player_y, player_x):
+    def command_leader(current_command:str, player_y:int, player_x:int):
         goal_x=player_x
         goal_y=player_y
         if current_command == 'right':  # Right
@@ -120,7 +120,7 @@ def tutorial():
             goal_y = player_y + yscale * 3
         return goal_x, goal_y
 
-    def check_collisions(last_activate_turn_tile):
+    def check_collisions(last_activate_turn_tile:list):
         level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
         if 0 < player_x < 870:
             if level[center_y // yscale][center_x // xscale] == 1:
@@ -130,7 +130,7 @@ def tutorial():
         return last_activate_turn_tile
 
 
-    def draw_board(color):
+    def draw_board(color:str):
         for i in range(len(level)):
             for j in range(len(level[i])):
                 if level[i][j] == 1:
@@ -220,7 +220,7 @@ def tutorial():
 
 
 
-    def draw_player(last_direction):
+    def draw_player(last_direction:int):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
         for direction_idx in range(0,4):
             if direction_idx == direction:
@@ -230,8 +230,55 @@ def tutorial():
             screen.blit(player_images[last_direction], (player_x, player_y))
         return last_direction
 
+    def check_position(centerx:float, centery:float):
+        turns = [False, False, False, False]
+        num3 = 5
+        # check collisions based on center x and center y of player +/- fudge number
+        if centerx // 30 < 29:
+            if direction == 0:
+                if level[centery // num1][(centerx - num3) // num2] < 3:
+                    turns[1] = True
+            if direction == 1:
+                if level[centery // num1][(centerx + num3) // num2] < 3:
+                    turns[0] = True
+            if direction == 2:
+                if level[(centery + num3) // num1][centerx // num2] < 3:
+                    turns[3] = True
+            if direction == 3:
+                if level[(centery - num3) // num1][centerx // num2] < 3:
+                    turns[2] = True
 
-    def move_player(play_x, play_y):
+            if direction == 2 or direction == 3:
+                if 12 <= centerx % num2 <= 18:
+                    if level[(centery + num3) // num1][centerx // num2] < 3:
+                        turns[3] = True
+                    if level[(centery - num3) // num1][centerx // num2] < 3:
+                        turns[2] = True
+                if 12 <= centery % num1 <= 18:
+                    if level[centery // num1][(centerx - num2) // num2] < 3:
+                        turns[1] = True
+                    if level[centery // num1][(centerx + num2) // num2] < 3:
+                        turns[0] = True
+            if direction == 0 or direction == 1:
+                if 12 <= centerx % num2 <= 18:
+                    if level[(centery + num1) // num1][centerx // num2] < 3:
+                        turns[3] = True
+                    if level[(centery - num1) // num1][centerx // num2] < 3:
+                        turns[2] = True
+                if 12 <= centery % num1 <= 18:
+                    if level[centery // num1][(centerx - num3) // num2] < 3:
+                        turns[1] = True
+                    if level[centery // num1][(centerx + num3) // num2] < 3:
+                        turns[0] = True
+            if direction == 4:
+                turns = [True, True, True, True]
+        else:
+            turns = [True, True, True, True]
+
+        return turns
+
+
+    def move_player(play_x:int, play_y:int):
         # r, l, u, d
         # If current direction is right and right is allowed, move right
         if direction == 0 and turns_allowed[0]:

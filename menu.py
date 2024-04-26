@@ -127,7 +127,6 @@ class CreditsMenu(Menu):
                 self.game.curr_menu = self.game.main_menu
                 self.run_display = False
             self.game.display.fill(self.game.BLACK)
-
         
         # Titulo
             self.game.draw_text('Brain Command', 70, self.game.DISPLAY_W / 2, text_y_position)
