@@ -1,5 +1,4 @@
 
-from data_utils import get_best_classificator_and_test_accuracy, ClfSwitcher
 import joblib
 from sklearn.pipeline import Pipeline
 from pyriemann.estimation import Covariances
@@ -20,6 +19,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+import pandas as pd
 
 # MDM() Always nan at the end
 classifiers = [ # The Good, Medium and Bad is decided on Torres dataset. This to avoid most of the processings.
@@ -71,9 +71,29 @@ class ClfSwitcher(BaseEstimator):
     def coef_(self):
         return self.estimator.coef_
 
-def load_data(dataset_info: dict, subject_id: int):
-    # todo: get a way to save the eeg data with events and everything, matlab? from that you can create the dataloader
-    return data, labels
+def get_best_classificator_and_test_accuracy(data, labels, estimators):
+    param_grid = []
+    for classificator in classifiers:
+        param_grid.append({'clf__estimator': [classificator]})
+
+    cv = StratifiedKFold(n_splits=4, shuffle=True, random_state=42)
+    clf = GridSearchCV(estimator=estimators, param_grid=param_grid, cv=cv) # https://stackoverflow.com/questions/52580023/how-to-get-the-best-estimator-parameters-out-from-pipelined-gridsearch-and-cro
+    clf.fit(data, labels)
+
+    acc = clf.best_score_ # Best Test Score
+    print("Best Test Score: \n{}\n".format(clf.best_score_))
+
+    if acc <= 0.25:
+        acc = np.nan
+    return clf.best_estimator_, acc
+
+def braincommand_dataset_loader(game_mode: str, subject_id: int):
+    complete_information = pd.read_csv(f'assets/game_saved_files/eeg_data_{game_mode}_sub{subject_id:02d}.csv')
+    x_list = list(complete_information['time'].apply(eval))
+    label = complete_information['class']
+    x_array = np.array(x_list[1:]) # trials, time, channels
+    data = np.transpose(x_array, (0, 2, 1))
+    return data, label[1:] # TODO: I'm removing the first one because the EEG data is incomplete. Check how it behaves in real time
 
 def simple_train(data, labels):
     clf = Pipeline([("Cova", Covariances()), ("ts", TangentSpace()), ('clf', ClfSwitcher())]) # This is probably the best one, at least for Torres
@@ -97,8 +117,9 @@ if __name__ == "__main__":
 
     subject_id = 0
     game_mode = 'calibration1'
-    print(subject_id)
-    data, labels = load_data(dataset_info, subject_id)
-    classifier, acc = simple_train(data, labels)
-    joblib.dump(classifier, f'assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}.pkl')
 
+    data, labels = braincommand_dataset_loader(game_mode, subject_id)
+    classifier, acc = simple_train(data, labels)
+    joblib.dump(classifier, f'assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}.joblib')
+
+    print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")

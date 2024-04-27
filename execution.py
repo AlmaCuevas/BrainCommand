@@ -9,8 +9,8 @@ import time
 import pylsl
 import numpy as np
 import joblib
-
 import pandas as pd
+
 
 # The report file will only be saved when the game finishes without quitting.
 # You don't have to close or open a new game to select a different mode.
@@ -29,7 +29,7 @@ def lsl_inlet(name:str, number_subject: int = 1):
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
     return inlet
 
-def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False, player1_subject_id: int = 0, player2_subject_id: int = 0):
+def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = True, player1_subject_id: int = 0, player2_subject_id: int = 0):
     fs: int = 250
 
     player1_eeg_data: dict = {'time': [], 'class':[], 'movement index':[0], 'game index':[]}
@@ -52,11 +52,18 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
         player2_subject_id = int(player2_subject_id)  # It becomes str during the main menu parsing
 
 
+    if game_mode=='calibration2':
+        clf_loading_game_mode = 'calibration1'
+    elif game_mode=='singleplayer' or game_mode=='singleplayer':
+        clf_loading_game_mode = 'calibration2'
+    else:
+        clf_loading_game_mode = game_mode
+
     if process_mode:
         if game_mode=='calibration2' or game_mode == 'singleplayer':
-            clf_1 = joblib.load(open(f'assets/classifier_data/calibration1_sub{player1_subject_id:02d}.pkl', 'rb'))
+            clf_1 = joblib.load(open(f'assets/classifier_data/classifier_{clf_loading_game_mode}_sub{player1_subject_id:02d}.joblib', 'rb'))
         elif game_mode == 'multiplayer':
-            clf_2 = joblib.load(open(f'assets/classifier_data/calibration1_sub{player2_subject_id:02d}.pkl', 'rb'))
+            clf_2 = joblib.load(open(f'assets/classifier_data/classifier_{clf_loading_game_mode}_sub{player2_subject_id:02d}.joblib', 'rb'))
     else:
         clf_1 = None
         clf_2 = None
@@ -400,7 +407,8 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = False
             eeg, t_eeg = eeg_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
             if eeg:
                 if process_mode:
-                    probs_array = clf.predict_proba(eeg)
+                    data = np.transpose(np.asarray([eeg]), (0, 2, 1))
+                    probs_array = clf.predict_proba(data)[0]
                     valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)]
                     prediction_movement_1 = np.argmax(
                         valid_array)  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
