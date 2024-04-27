@@ -100,7 +100,12 @@ def simple_train(data, labels):
     classifier, acc = get_best_classificator_and_test_accuracy(data, labels, clf)
     return classifier, acc
 
+def BrainCommand_train(game_mode: str, subject_id: int) -> None:
+    data, labels = braincommand_dataset_loader(game_mode, subject_id)
+    classifier, acc = simple_train(data, labels)
+    joblib.dump(classifier, f'assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}.joblib')
 
+    print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
 if __name__ == "__main__":
     dataset_info = { # BrainCommand
@@ -118,8 +123,4 @@ if __name__ == "__main__":
     subject_id = 0
     game_mode = 'calibration1'
 
-    data, labels = braincommand_dataset_loader(game_mode, subject_id)
-    classifier, acc = simple_train(data, labels)
-    joblib.dump(classifier, f'assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}.joblib')
-
-    print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
+    BrainCommand_train(game_mode, subject_id)

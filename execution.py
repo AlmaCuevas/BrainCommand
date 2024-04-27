@@ -1,8 +1,8 @@
-# Build Pac-Man from Scratch in Python with PyGame!!
 import copy
 import random
 
-from board_execution import multiplayer_execution_boards, multiplayer_player_1_start_execution_positions, multiplayer_player_2_start_execution_positions, singleplayer_start_execution_positions, singleplayer_execution_boards, tutorial_player_1_start_execution_positions, tutorial_execution_boards
+from BrainCommand_train import BrainCommand_train
+from board_execution import multiplayer_execution_boards, multiplayer_player_1_start_execution_positions, multiplayer_player_2_start_execution_positions, singleplayer_start_execution_positions, singleplayer_execution_boards, calibration_player_1_start_execution_positions, calibration_execution_boards
 import pygame
 import math
 import time
@@ -15,30 +15,24 @@ import pandas as pd
 # The report file will only be saved when the game finishes without quitting.
 # You don't have to close or open a new game to select a different mode.
 
-# TODO: Training should happen after finishing calibration (CALL CUTOMIZED_PROBS IN A FILE THAT RETURNS THE PKL CLF)
-#       TODO: Right after saving the file with calibration, the training should load it and start immediately.
-            # TODO: I can't do that until I know which device I am using and what output (EDF? MAT?) they provide.
-
-# todo: pull_sample all available during the blue may be better than pull_chuk if cant get the pull_chunk to just do it once at the right time
-
-# LSL COMMUNICATIONtlet
-
+# LSL COMMUNICATION
 def lsl_inlet(name:str, number_subject: int = 1):
     info = pylsl.resolve_stream('name', name + str(number_subject))
     inlet = pylsl.stream_inlet(info[0], recover=False)
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
     return inlet
 
-def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = True, player1_subject_id: int = 0, player2_subject_id: int = 0):
+def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = True):
     fs: int = 250
 
     player1_eeg_data: dict = {'time': [], 'class':[], 'movement index':[0], 'game index':[]}
     player1_subject_id = int(player1_subject_id)
+    print(player1_subject_id)
 
     if game_mode=='calibration1' or game_mode=='calibration2':
-        player_1_start_execution_positions = tutorial_player_1_start_execution_positions
+        player_1_start_execution_positions = calibration_player_1_start_execution_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
-        execution_boards = tutorial_execution_boards
+        execution_boards = calibration_execution_boards
     elif game_mode == 'singleplayer':
         player_1_start_execution_positions = singleplayer_start_execution_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
@@ -637,19 +631,22 @@ def play_game(game_mode: str, dev_mode: bool = False, process_mode: bool = True,
         player1_eeg_data['movement index'] = player1_eeg_data['movement index'][1:] # Avoid the init
         pd.DataFrame(player1_eeg_data).to_csv(
             f'assets/game_saved_files/eeg_data_{game_mode}_sub{player1_subject_id:02d}.csv')
+        output_name_txt = f'assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}.txt'
         if game_mode == 'multiplayer':
             player2_eeg_data['movement index'] = player2_eeg_data['movement index'][1:]  # Avoid the init
             pd.DataFrame(player2_eeg_data).to_csv(
                 f'assets/game_saved_files/eeg_data_{game_mode}_sub{player2_subject_id:02d}.csv')
+            output_name_txt = f'assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}_and_sub_{player2_subject_id:02d}.txt'
 
-        if game_mode != 'multiplayer':
-            file = open(f'assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}.txt', 'w')
-        else:
-            file = open(f'assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}_and_sub_{player2_subject_id:02d}.txt', 'w')
+        file = open(output_name_txt, 'w')
         file.write(f'game_mode, {game_mode}\n')
         file.write(f'total_game_time, {total_game_time}\n')
         file.write(f'cookie_winner, {cookie_winner}\n')
         file.write(f'player_1_turns, {player_1_total_game_turns}\n')
         file.write(f'player_2_turns, {player_2_total_game_turns}\n')
         file.close()
+
+        if 'calibration' in game_mode: # If a calibration mode was run, then train the classifier for the next round
+            BrainCommand_train(game_mode, player1_subject_id)
+
     print("Congrats! Game finished :D")

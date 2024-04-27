@@ -583,10 +583,10 @@ singleplayer_mirrored_map = [
 ]
 
 # Games
-tutorial_execution_boards=[level_1, level_1A, level_1B, level_1C, level_1D, level_1E,
-                          level_2, level_2A, level_3, level_3A, level_3B]
-tutorial_player_1_start_execution_positions=[start_level_1, start_level_1A, start_level_1B, start_level_1C, start_level_1D, start_level_1E,
-                                            start_level_2, start_level_2A, start_level_3, start_level_3A, start_level_3B]
+calibration_execution_boards=[level_1, level_1A, level_1B, level_1C, level_1D, level_1E,
+                              level_2, level_2A, level_3, level_3A, level_3B]
+calibration_player_1_start_execution_positions=[start_level_1, start_level_1A, start_level_1B, start_level_1C, start_level_1D, start_level_1E,
+                                                start_level_2, start_level_2A, start_level_3, start_level_3A, start_level_3B]
 
 multiplayer_execution_boards=[multiplayer_map, multiplayer_mirrored_map]
 multiplayer_player_1_start_execution_positions=[start_multiplayer_1, start_multiplayer_mirrored_1]

@@ -101,16 +101,20 @@ class MainMenu(Menu):
                 tutorial.tutorial()  # No interactive video
             elif self.state == 'Calibration':
                 self.game.playing = True
-                execution.play_game(game_mode='calibration1', dev_mode=self.dev_mode) # With keys
+                execution.play_game(game_mode='calibration1', player1_subject_id=self.player1_ID, player2_subject_id=0,
+                                    dev_mode=self.dev_mode)  # With keys
             elif self.state == 'Calibration 2':
                 self.game.playing = True
-                execution.play_game(game_mode='calibration2', dev_mode=self.dev_mode, player1_subject_id=self.player1_ID) # With EEG
+                execution.play_game(game_mode='calibration2', player1_subject_id=self.player1_ID, player2_subject_id=0,
+                                    dev_mode=self.dev_mode)  # With EEG
             elif self.state == 'Multiplayer':
                 self.game.playing = True
-                execution.play_game(game_mode='multiplayer', dev_mode=self.dev_mode, player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID)
+                execution.play_game(game_mode='multiplayer', player1_subject_id=self.player1_ID,
+                                    player2_subject_id=self.player2_ID, dev_mode=self.dev_mode)
             elif self.state == 'Singleplayer':
                 self.game.playing = True
-                execution.play_game(game_mode='singleplayer', dev_mode=self.dev_mode, player1_subject_id=self.player1_ID)
+                execution.play_game(game_mode='singleplayer', player1_subject_id=self.player1_ID, player2_subject_id=0,
+                                    dev_mode=self.dev_mode)
             elif self.state == 'Credits':
                 self.game.curr_menu = self.game.credits
             self.run_display = False
