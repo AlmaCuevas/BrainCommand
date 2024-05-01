@@ -22,8 +22,8 @@ def lsl_inlet(name:str, number_subject: int = 1):
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
     return inlet
 
-def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = True):
-    fs: int = 250
+def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = False):
+    fs: int = 250 # Unicorn Hybrid Black
 
     player1_eeg_data: dict = {'time': [], 'class':[], 'movement index':[0], 'game index':[]}
     player1_subject_id = int(player1_subject_id)

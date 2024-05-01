@@ -1,10 +1,11 @@
 
 import joblib
+from sklearn.metrics import classification_report
 from sklearn.pipeline import Pipeline
 from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import TangentSpace
 import numpy as np
-
+from sklearn import preprocessing
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
 from sklearn.base import BaseEstimator
@@ -20,7 +21,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 import pandas as pd
-
+from scipy import signal
+from mne.preprocessing import Xdawn
+from mne import EpochsArray
+import mne
 # MDM() Always nan at the end
 classifiers = [ # The Good, Medium and Bad is decided on Torres dataset. This to avoid most of the processings.
     # KNeighborsClassifier(3), # Good
@@ -87,13 +91,47 @@ def get_best_classificator_and_test_accuracy(data, labels, estimators):
         acc = np.nan
     return clf.best_estimator_, acc
 
+def data_normalization(data):
+    min_val = np.min(data)
+    max_val = np.max(data)
+    scaled_data = (data - min_val) / (max_val - min_val)
+    return scaled_data
+
+from collections import defaultdict
+
+def indexes(l, chosen_key):
+    _indices = defaultdict(list)
+    for index, item in enumerate(l):
+        _indices[item].append(index)
+
+    for key, value in _indices.items():
+        if key == chosen_key:
+            return value
+
+def remove_too_different_trials_v2(data: np.array, label) -> np.array:
+    data_cleaned = []
+    label_cleaned = []
+    for word_index in range(len(dataset_info["target_names"])):
+        indexes_from_word = indexes(label, word_index)
+        for i_index in indexes_from_word:
+            trial = data[i_index,:,:]
+            trial_label = label[i_index]
+            if np.mean(np.abs(trial)) < np.mean(np.abs(data[indexes_from_word,:,:]))*1.5 :
+                data_cleaned.append(trial)
+                label_cleaned.append(trial_label)
+    return np.array(data_cleaned), label_cleaned
+
 def braincommand_dataset_loader(game_mode: str, subject_id: int):
     complete_information = pd.read_csv(f'assets/game_saved_files/eeg_data_{game_mode}_sub{subject_id:02d}.csv')
     x_list = list(complete_information['time'].apply(eval))
-    label = complete_information['class']
+    label = list(complete_information['class'][1:])# TODO: I'm removing the first one because the EEG data is incomplete. Real time seems to have this problem too. So the first one will always be lost
     x_array = np.array(x_list[1:]) # trials, time, channels
-    data = np.transpose(x_array, (0, 2, 1))
-    return data, label[1:] # TODO: I'm removing the first one because the EEG data is incomplete. Check how it behaves in real time
+    x_array = x_array[:, 50:, :-9] # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
+    x_array = np.transpose(x_array, (0, 2, 1))
+    x_array = signal.detrend(x_array)
+    x_array, label = remove_too_different_trials_v2(x_array, label)
+    x_array = data_normalization(x_array)
+    return x_array, label
 
 def simple_train(data, labels):
     clf = Pipeline([("Cova", Covariances()), ("ts", TangentSpace()), ('clf', ClfSwitcher())]) # This is probably the best one, at least for Torres
@@ -108,16 +146,16 @@ def BrainCommand_train(game_mode: str, subject_id: int) -> None:
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
 if __name__ == "__main__":
-    dataset_info = { # BrainCommand
+    dataset_info = {  # BrainCommand
                     'dataset_name': 'BrainCommand',
                     '#_class': 4,
                     "target_names": ['Derecha', 'Izquierda', 'Arriba', 'Abajo'],
-                    '#_channels': 8, # PENDING
-                    'samples': 700, # PENDING
-                    'sample_rate': 500, # PENDING
-                    'channels_names': ['PENDING'], # PENDING
-                    'subjects': 0, # PENDING
-                    'total_trials':0, # PENDING
+                    '#_channels': 8,
+                    'samples': 350 - 50,  # 250*1.4
+                    'sample_rate': 250,
+                    'channels_names': ['Fz', 'C3', 'Cz', 'C4', 'Pz', 'PO7', 'Oz', 'PO8'],  # This is from the original Unicorn cap
+                    'subjects': 0,  # PENDING
+                    'total_trials': 0,  # VARIABLE SINCE THE SUBJECT HAS TOTAL CONTROL OF HOW MANY MOVEMENTS THEY WANT TO DO
                 }
 
     subject_id = 0
