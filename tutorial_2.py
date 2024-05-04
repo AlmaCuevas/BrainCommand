@@ -26,7 +26,7 @@ def tutorial():
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
     timer = pygame.time.Clock()
     fps = 60  # This decides how fast the game goes. Including pacman and ghosts.
-    font = pygame.font.Font("RetroFont.ttf", 30)
+    font = pygame.font.Font("assets/RetroFont.ttf", 30)
     color = "white"
     PI = math.pi
 

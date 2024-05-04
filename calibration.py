@@ -41,7 +41,7 @@ def bci_calibration(dev_mode: bool = False):
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
     timer = pygame.time.Clock()
     fps:int = 60  # This decides how fast the game goes.
-    font = pygame.font.Font("RetroFont.ttf", 30)
+    font = pygame.font.Font("assets/RetroFont.ttf", 30)
     color = "white"
     PI = math.pi
 

@@ -90,7 +90,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
     timer = pygame.time.Clock()
     fps = 60  # This decides how fast the game goes.
-    font = pygame.font.Font("RetroFont.ttf", 30)
+    font = pygame.font.Font("assets/RetroFont.ttf", 30)
     color = "white"
     PI = math.pi
     total_game_time: list = []
@@ -168,7 +168,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     start_time_eeg_2: float = 0
 
     def draw_text(text: str):
-        font = pygame.font.Font("RetroFont.ttf", 300)
+        font = pygame.font.Font("assets/RetroFont.ttf", 300)
         txt_render = font.render(text, True, "lightgrey")
         screen.blit(txt_render,
                     (WIDTH / 2 - txt_render.get_width() / 2, HEIGHT / 2 - txt_render.get_height() / 2))
