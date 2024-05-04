@@ -230,53 +230,6 @@ def tutorial():
             screen.blit(player_images[last_direction], (player_x, player_y))
         return last_direction
 
-    def check_position(centerx:float, centery:float):
-        turns = [False, False, False, False]
-        num3 = 5
-        # check collisions based on center x and center y of player +/- fudge number
-        if centerx // 30 < 29:
-            if direction == 0:
-                if level[centery // num1][(centerx - num3) // num2] < 3:
-                    turns[1] = True
-            if direction == 1:
-                if level[centery // num1][(centerx + num3) // num2] < 3:
-                    turns[0] = True
-            if direction == 2:
-                if level[(centery + num3) // num1][centerx // num2] < 3:
-                    turns[3] = True
-            if direction == 3:
-                if level[(centery - num3) // num1][centerx // num2] < 3:
-                    turns[2] = True
-
-            if direction == 2 or direction == 3:
-                if 12 <= centerx % num2 <= 18:
-                    if level[(centery + num3) // num1][centerx // num2] < 3:
-                        turns[3] = True
-                    if level[(centery - num3) // num1][centerx // num2] < 3:
-                        turns[2] = True
-                if 12 <= centery % num1 <= 18:
-                    if level[centery // num1][(centerx - num2) // num2] < 3:
-                        turns[1] = True
-                    if level[centery // num1][(centerx + num2) // num2] < 3:
-                        turns[0] = True
-            if direction == 0 or direction == 1:
-                if 12 <= centerx % num2 <= 18:
-                    if level[(centery + num1) // num1][centerx // num2] < 3:
-                        turns[3] = True
-                    if level[(centery - num1) // num1][centerx // num2] < 3:
-                        turns[2] = True
-                if 12 <= centery % num1 <= 18:
-                    if level[centery // num1][(centerx - num3) // num2] < 3:
-                        turns[1] = True
-                    if level[centery // num1][(centerx + num3) // num2] < 3:
-                        turns[0] = True
-            if direction == 4:
-                turns = [True, True, True, True]
-        else:
-            turns = [True, True, True, True]
-
-        return turns
-
 
     def move_player(play_x:int, play_y:int):
         # r, l, u, d
@@ -369,7 +322,7 @@ def tutorial():
             screen.blit(player_images[4], (WIDTH * 1 / 6, HEIGHT / 2-100))
             screen.blit(cookie_big, (WIDTH * 1 / 2, HEIGHT / 2-100))
             pygame.display.flip()
-            time.sleep(2)
+            time.sleep(3)
             # Prompts
             screen.fill("black")
             tutorial_text = font.render("Puedes utilizar 4 palabras:", True, "white")
@@ -400,7 +353,7 @@ def tutorial():
                          HEIGHT / 2 - tutorial_text_2.get_height() / 2 + 150))
             draw_board("white")
             pygame.display.flip()
-            time.sleep(6)
+            time.sleep(8)
             screen.fill("black")
             tutorial_text = font.render("En EJECUCIÓN", True, "blue")
             screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
@@ -408,7 +361,7 @@ def tutorial():
             screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
             draw_board("white")
             pygame.display.flip()
-            time.sleep(6)
+            time.sleep(8)
             move_counter +=1
 
         screen.fill("black")

@@ -40,6 +40,17 @@ classifiers = [ # The Good, Medium and Bad is decided on Torres dataset. This to
     #LogisticRegression(), # Good
 ]
 
+dataset_info = {  # BrainCommand
+                    'dataset_name': 'BrainCommand',
+                    '#_class': 4,
+                    "target_names": ['Derecha', 'Izquierda', 'Arriba', 'Abajo'],
+                    '#_channels': 8,
+                    'samples': 350 - 50,  # 250*1.4
+                    'sample_rate': 250,
+                    'channels_names': ['Fz', 'C3', 'Cz', 'C4', 'Pz', 'PO7', 'Oz', 'PO8'],  # This is from the original Unicorn cap
+                    'subjects': 0,  # PENDING
+                    'total_trials': 0,  # VARIABLE SINCE THE SUBJECT HAS TOTAL CONTROL OF HOW MANY MOVEMENTS THEY WANT TO DO
+                }
 
 class ClfSwitcher(BaseEstimator):
     # https://stackoverflow.com/questions/48507651/multiple-classification-models-in-a-scikit-pipeline-python
@@ -126,7 +137,7 @@ def braincommand_dataset_loader(game_mode: str, subject_id: int):
     x_list = list(complete_information['time'].apply(eval))
     label = list(complete_information['class'][1:])# TODO: I'm removing the first one because the EEG data is incomplete. Real time seems to have this problem too. So the first one will always be lost
     x_array = np.array(x_list[1:]) # trials, time, channels
-    x_array = x_array[:, 50:, :-9] # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
+    x_array = x_array[:, :, :-9] # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
     x_array = np.transpose(x_array, (0, 2, 1))
     x_array = signal.detrend(x_array)
     x_array, label = remove_too_different_trials_v2(x_array, label)
@@ -146,19 +157,8 @@ def BrainCommand_train(game_mode: str, subject_id: int) -> None:
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
 if __name__ == "__main__":
-    dataset_info = {  # BrainCommand
-                    'dataset_name': 'BrainCommand',
-                    '#_class': 4,
-                    "target_names": ['Derecha', 'Izquierda', 'Arriba', 'Abajo'],
-                    '#_channels': 8,
-                    'samples': 350 - 50,  # 250*1.4
-                    'sample_rate': 250,
-                    'channels_names': ['Fz', 'C3', 'Cz', 'C4', 'Pz', 'PO7', 'Oz', 'PO8'],  # This is from the original Unicorn cap
-                    'subjects': 0,  # PENDING
-                    'total_trials': 0,  # VARIABLE SINCE THE SUBJECT HAS TOTAL CONTROL OF HOW MANY MOVEMENTS THEY WANT TO DO
-                }
-
-    subject_id = 0
+    subject_id = 10
     game_mode = 'calibration1'
 
-    BrainCommand_train(game_mode, subject_id)
+    BrainCommand_train(game_mode, subject_id) #todo: once it happened that it only recognized up and down in the solo, you will need that the classfiers is way better
+    #todo: rn it works nothing at all.

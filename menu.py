@@ -1,6 +1,6 @@
 import pygame
 import execution
-import tutorial
+import tutorial_1
 
 class Menu():
     def __init__(self, game, dev_mode: bool = False, player1_ID: int = 0, player2_ID: int = 0):
@@ -25,13 +25,13 @@ class MainMenu(Menu):
     def __init__(self, game, dev_mode: bool = False, player1_ID: int = 0, player2_ID: int = 0):
         Menu.__init__(self, game, dev_mode, player1_ID, player2_ID)
         self.state = "Tutorial"
-        self.calibration_tutorialx, self.calibration_tutorialy = self.mid_w, self.mid_h - 100
-        self.calibrationx, self.calibrationy = self.mid_w, self.mid_h - 50
-        self.execution_tutorialx, self.execution_tutorialy = self.mid_w, self.mid_h + 0
+        self.tutorial_1_x, self.tutorial_1_y = self.mid_w, self.mid_h - 100
+        self.calibration_1_x, self.calibration_1_y = self.mid_w, self.mid_h - 50
+        self.calibration_2_x, self.calibration_2_y = self.mid_w, self.mid_h + 0
         self.multiplayerx, self.multiplayery = self.mid_w, self.mid_h + 100
         self.singleplayerx, self.singleplayery = self.mid_w, self.mid_h + 150
         self.creditsx, self.creditsy = self.mid_w, self.mid_h + 250
-        self.cursor_rect.midtop = (self.calibration_tutorialx + self.offset, self.calibration_tutorialy)
+        self.cursor_rect.midtop = (self.tutorial_1_x + self.offset, self.tutorial_1_y)
 
     def display_menu(self):
         self.run_display = True
@@ -40,9 +40,9 @@ class MainMenu(Menu):
             self.check_input()
             self.game.display.fill(self.game.BLACK)
             self.game.draw_text('Brain Command', 70, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 - 300)
-            self.game.draw_text("Tutorial", 40, self.calibration_tutorialx, self.calibration_tutorialy)
-            self.game.draw_text("Calibración 1", 40, self.calibrationx, self.calibrationy)
-            self.game.draw_text("Calibración 2", 40, self.execution_tutorialx, self.execution_tutorialy)
+            self.game.draw_text("Tutorial", 40, self.tutorial_1_x, self.tutorial_1_y)
+            self.game.draw_text("Calibración 1", 40, self.calibration_1_x, self.calibration_1_y)
+            self.game.draw_text("Calibración 2", 40, self.calibration_2_x, self.calibration_2_y)
             self.game.draw_text("Competitivo", 40, self.multiplayerx, self.multiplayery)
             self.game.draw_text("Solo", 40, self.singleplayerx, self.singleplayery)
             self.game.draw_text("Créditos", 40, self.creditsx, self.creditsy)
@@ -53,10 +53,10 @@ class MainMenu(Menu):
     def move_cursor(self):
         if self.game.DOWN_KEY:
             if self.state == 'Tutorial':
-                self.cursor_rect.midtop = (self.calibrationx + self.offset, self.calibrationy)
+                self.cursor_rect.midtop = (self.calibration_1_x + self.offset, self.calibration_1_y)
                 self.state = 'Calibration'
             elif self.state == 'Calibration':
-                self.cursor_rect.midtop = (self.execution_tutorialx + self.offset, self.execution_tutorialy)
+                self.cursor_rect.midtop = (self.calibration_2_x + self.offset, self.calibration_2_y)
                 self.state = 'Calibration 2'
             elif self.state == 'Calibration 2':
                 self.cursor_rect.midtop = (self.multiplayerx + self.offset, self.multiplayery)
@@ -68,20 +68,20 @@ class MainMenu(Menu):
                 self.cursor_rect.midtop = (self.creditsx + self.offset, self.creditsy)
                 self.state = 'Credits'
             elif self.state == 'Credits':
-                self.cursor_rect.midtop = (self.calibration_tutorialx + self.offset, self.calibration_tutorialy)
+                self.cursor_rect.midtop = (self.tutorial_1_x + self.offset, self.tutorial_1_y)
                 self.state = 'Tutorial'
         elif self.game.UP_KEY:
             if self.state == 'Tutorial':
                 self.cursor_rect.midtop = (self.creditsx + self.offset, self.creditsy)
                 self.state = 'Credits'
             elif self.state == 'Calibration':
-                self.cursor_rect.midtop = (self.calibration_tutorialx + self.offset, self.calibration_tutorialy)
+                self.cursor_rect.midtop = (self.tutorial_1_x + self.offset, self.tutorial_1_y)
                 self.state = 'Tutorial'
             elif self.state == 'Calibration 2':
-                self.cursor_rect.midtop = (self.calibrationx + self.offset, self.calibrationy)
+                self.cursor_rect.midtop = (self.calibration_1_x + self.offset, self.calibration_1_y)
                 self.state = 'Calibration'
             elif self.state == 'Multiplayer':
-                self.cursor_rect.midtop = (self.execution_tutorialx + self.offset, self.execution_tutorialy)
+                self.cursor_rect.midtop = (self.calibration_2_x + self.offset, self.calibration_2_y)
                 self.state = 'Calibration 2'
             elif self.state == 'Singleplayer':
                 self.cursor_rect.midtop = (self.multiplayerx + self.offset, self.multiplayery)
@@ -98,7 +98,7 @@ class MainMenu(Menu):
             sound_start.play()
             if self.state == 'Tutorial':
                 self.game.playing = True
-                tutorial.tutorial()  # No interactive video
+                tutorial_1.tutorial()  # No interactive video
             elif self.state == 'Calibration':
                 self.game.playing = True
                 execution.play_game(game_mode='calibration1', player1_subject_id=self.player1_ID, player2_subject_id=0,
