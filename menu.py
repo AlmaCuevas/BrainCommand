@@ -105,8 +105,8 @@ class MainMenu(Menu):
                                     dev_mode=self.dev_mode)  # With keys
             elif self.state == 'Calibration 2':
                 self.game.playing = True
-                execution.play_game(game_mode='calibration2', player1_subject_id=self.player1_ID, player2_subject_id=0,
-                                    dev_mode=self.dev_mode)  # With EEG
+                execution.play_game(game_mode='calibration2', player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID,
+                                    dev_mode=self.dev_mode)  # With defined toggle
             elif self.state == 'Multiplayer':
                 self.game.playing = True
                 execution.play_game(game_mode='multiplayer', player1_subject_id=self.player1_ID,
