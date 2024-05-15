@@ -37,7 +37,7 @@ def tutorial():
                      pygame.transform.scale(pygame.image.load(f'assets/extras_images/left_1.png'), (xscale, yscale)),
                      pygame.transform.scale(pygame.image.load(f'assets/extras_images/forward_1.png'), (xscale, yscale)),
                      pygame.transform.scale(pygame.image.load(f'assets/extras_images/back_1.png'), (xscale, yscale)),
-                     pygame.transform.scale(pygame.image.load(f'assets/extras_images/back_1.png'), (xscale * 10, yscale * 10))]
+                     pygame.transform.scale(pygame.image.load(f'assets/extras_images/back_1.png'), (xscale, yscale))]
                     # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN, 4-Bigger Image
     arrow = pygame.transform.scale(
         pygame.image.load(f"assets/extras_images/arrow.png"), (xscale, yscale)
@@ -50,6 +50,7 @@ def tutorial():
     ]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
     cookie = pygame.transform.scale(pygame.image.load(f'assets/extras_images/cookie.png'), (xscale, yscale))
     cookie_big = pygame.transform.scale(pygame.image.load(f'assets/extras_images/cookie.png'), (xscale * 10, yscale * 10))
+    player_image_big = pygame.transform.scale(pygame.image.load(f'assets/extras_images/right_1.png'), (xscale * 10, yscale * 10))
 
 
     ## Positions
@@ -77,13 +78,15 @@ def tutorial():
                     (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2 + 100 + height_mod))
 
     def draw_misc():
-        print(current_level)
         if current_level > 4 and current_level != 8 and current_level !=9:
             print_direction_instructions(direction_word="EJECUCIÓN",
-                                         complementary_text="Solo HABLA IMAGINADA, sin presionar tecla", height_mod=100, color_mod="blue")
+                                         complementary_text="Realiza HABLA IMAGINADA, sin presionar tecla", height_mod=100, color_mod="blue")
         else:
             print_direction_instructions(direction_word="CALIBRACIÓN",
-                                         complementary_text="Presiona la tecla y luego realiza el HABLA IMAGINADA", height_mod=100, color_mod="green")
+                                         complementary_text="Realiza el HABLA IMAGINADA y", height_mod=100, color_mod="green")
+            print_direction_instructions(direction_word="",
+                                         complementary_text="luego presiona la tecla de movimiento",
+                                         height_mod=150, color_mod="green")
         if current_level == 0 or current_level == 4:
             print_direction_instructions(direction_word="ARRIBA", complementary_text="Moverá el personaje hacia arriba")
         elif current_level == 1 or current_level == 5:
@@ -105,7 +108,7 @@ def tutorial():
                         (WIDTH / 2 - prepare_for_next_level.get_width() / 2,
                          HEIGHT / 2 - prepare_for_next_level.get_height() / 2 + 100))
 
-    def command_leader(current_command, player_y, player_x):
+    def command_leader(current_command:str, player_y:int, player_x:int):
         goal_x=player_x
         goal_y=player_y
         if current_command == 'right':  # Right
@@ -118,7 +121,7 @@ def tutorial():
             goal_y = player_y + yscale * 3
         return goal_x, goal_y
 
-    def check_collisions(last_activate_turn_tile):
+    def check_collisions(last_activate_turn_tile:list):
         level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
         if 0 < player_x < 870:
             if level[center_y // yscale][center_x // xscale] == 1:
@@ -128,7 +131,7 @@ def tutorial():
         return last_activate_turn_tile
 
 
-    def draw_board(color):
+    def draw_board(color:str):
         for i in range(len(level)):
             for j in range(len(level[i])):
                 if level[i][j] == 1:
@@ -218,7 +221,7 @@ def tutorial():
 
 
 
-    def draw_player(last_direction):
+    def draw_player(last_direction:int):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
         for direction_idx in range(0,4):
             if direction_idx == direction:
@@ -229,7 +232,7 @@ def tutorial():
         return last_direction
 
 
-    def move_player(play_x, play_y):
+    def move_player(play_x:int, play_y:int):
         # r, l, u, d
         # If current direction is right and right is allowed, move right
         if direction == 0 and turns_allowed[0]:
@@ -243,22 +246,20 @@ def tutorial():
         return play_x, play_y
 
     def change_colors() -> None:
-
         if len(commands_list)>= 0:
-
+            screen.fill("black")
+            draw_board("white")
+            draw_misc()
+            pygame.draw.rect(
+                screen,
+                "blue",
+                [center_x - xscale, center_y - yscale, 60, 60],
+                border_radius=10,
+            )
+            draw_player(last_direction)
+            pygame.display.flip()
+            time.sleep(1)
             if current_level < 4 or current_level == 8 or current_level ==9:
-                # Green (Imagined Speech)
-                draw_misc()
-
-                pygame.draw.rect(
-                    screen,
-                    "green",
-                    [center_x - xscale, center_y - yscale, 60, 60],
-                    border_radius=10,
-                )
-
-                draw_player(last_direction)
-
                 if first_movement==True:
                     movement_command = current_command
                     if current_command == 'right':  # Right
@@ -281,21 +282,10 @@ def tutorial():
                         screen.blit(arrow_images[3], (player_x, player_y + yscale))
 
                 pygame.display.flip()
-                time.sleep(1.4)
+                time.sleep(0.4)
 
-            # Blue (Auditory Speech)
-            screen.fill("black")
-            draw_board("white")
-            draw_misc()
-            pygame.draw.rect(
-                screen,
-                "blue",
-                [center_x - xscale, center_y - yscale, 60, 60],
-                border_radius=10,
-            )
             draw_player(last_direction)
             pygame.display.flip()
-            time.sleep(1.4)
 
             draw_board("white")
 
@@ -328,12 +318,12 @@ def tutorial():
             time.sleep(2)
             # Objetivo
             screen.fill("black")
-            tutorial_text = font.render("Come todas las galletas para ganar", True, "white")
+            tutorial_text = font.render("¡Comanda a tus tropas a un lugar seguro!", True, "white")
             screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2 - 300))
-            screen.blit(player_images[4], (WIDTH * 1 / 6, HEIGHT / 2-100))
+            screen.blit(player_image_big, (WIDTH * 1 / 6, HEIGHT / 2-100))
             screen.blit(cookie_big, (WIDTH * 1 / 2, HEIGHT / 2-100))
             pygame.display.flip()
-            time.sleep(2)
+            time.sleep(3)
             # Prompts
             screen.fill("black")
             tutorial_text = font.render("Puedes utilizar 4 palabras:", True, "white")
@@ -354,9 +344,9 @@ def tutorial():
             time.sleep(5)
             # Colores
             screen.fill("black")
-            tutorial_text = font.render("En VERDE", True, "green")
+            tutorial_text = font.render("En CALIBRACIÓN", True, "green")
             screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
-            tutorial_text = font.render("Presiona la tecla", True, "green")
+            tutorial_text = font.render("Realiza el HABLA IMAGINADA y presiona la tecla", True, "green")
             screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
             tutorial_text_2 = font.render("del movimiento que quieras realizar", True, "green")
             screen.blit(tutorial_text_2,
@@ -364,18 +354,15 @@ def tutorial():
                          HEIGHT / 2 - tutorial_text_2.get_height() / 2 + 150))
             draw_board("white")
             pygame.display.flip()
-            time.sleep(6)
+            time.sleep(8)
             screen.fill("black")
-            tutorial_text = font.render("En AZUL", True, "blue")
+            tutorial_text = font.render("En EJECUCIÓN", True, "blue")
             screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2-300))
             tutorial_text = font.render("Realiza el HABLA IMAGINADA", True, "blue")
             screen.blit(tutorial_text, (WIDTH / 2 - tutorial_text.get_width() / 2, HEIGHT / 2 - tutorial_text.get_height() / 2+100))
-            tutorial_text_2 = font.render("de la tecla que hayas presionado", True, "blue")
-            screen.blit(tutorial_text_2,
-                        (WIDTH / 2 - tutorial_text_2.get_width() / 2, HEIGHT / 2 - tutorial_text_2.get_height() / 2 + 150))
             draw_board("white")
             pygame.display.flip()
-            time.sleep(6)
+            time.sleep(8)
             move_counter +=1
 
         screen.fill("black")
