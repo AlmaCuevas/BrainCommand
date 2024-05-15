@@ -136,6 +136,19 @@ def braincommand_dataset_loader(game_mode: str, subject_id: int):
     complete_information = pd.read_csv(f'assets/game_saved_files/eeg_data_{game_mode}_sub{subject_id:02d}.csv')
     x_list = list(complete_information['time'].apply(eval))
     label = list(complete_information['class'][1:])# TODO: I'm removing the first one because the EEG data is incomplete. Real time seems to have this problem too. So the first one will always be lost
+
+    label_0 = label.count(0)
+    print(f"label 0 is {label_0}")
+
+    label_1 = label.count(1)
+    print(f"label 1 is {label_1}")
+
+    label_2 = label.count(2)
+    print(f"label 2 is {label_2}")
+
+    label_3 = label.count(3)
+    print(f"label 3 is {label_3}")
+
     x_array = np.array(x_list[1:]) # trials, time, channels
     x_array = x_array[:, :, :-9] # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
     x_array = np.transpose(x_array, (0, 2, 1))
@@ -157,8 +170,8 @@ def BrainCommand_train(game_mode: str, subject_id: int) -> None:
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
 if __name__ == "__main__":
-    subject_id = 10
-    game_mode = 'calibration1'
+    subject_id = 21
+    game_mode = 'calibration2'
 
     BrainCommand_train(game_mode, subject_id) #todo: once it happened that it only recognized up and down in the solo, you will need that the classfiers is way better
     #todo: rn it works nothing at all.

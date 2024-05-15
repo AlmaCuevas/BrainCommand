@@ -3,7 +3,7 @@ import random
 
 from BrainCommand_train import BrainCommand_train, data_normalization
 from board_execution import multiplayer_execution_boards, multiplayer_player_1_start_execution_positions, multiplayer_player_2_start_execution_positions, singleplayer_start_execution_positions, singleplayer_execution_boards, calibration_player_1_start_execution_positions, calibration_execution_boards
-from board_execution_closed_map import closed_map_boards, closed_map_player_1_positions, closed_map_player_2_positions
+from board_execution_closed_map import closed_map_boards, closed_map_player_1_positions, closed_map_player_2_positions, desired_directions
 import pygame
 import math
 import time
@@ -23,7 +23,14 @@ def lsl_inlet(name:str, number_subject: int = 1):
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
     return inlet
 
-def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = False): # Process mode will train after a calibration and test during an execution
+def flat_a_list(list_to_flat: list):
+    return [
+        x
+        for xs in list_to_flat
+        for x in xs
+    ]
+
+def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = True): # Process mode will train after a calibration and test during an execution
     fs: int = 250 # Unicorn Hybrid Black
     calibration_style = "only_blue" # or "green_blue" . "green_blue" doesn't make sense with the closed-map: calibration 2.
 
@@ -52,23 +59,20 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions
         execution_boards = multiplayer_execution_boards
 
-    desired_direction_player_1 = 0
-    desired_direction_player_2 = 1
-
 
     if game_mode=='singleplayer' or game_mode == 'multiplayer':
         clf_loading_game_mode = 'calibration1' # 'calibration2' it can be either. PENDING FOR DECISION
     else:
         clf_loading_game_mode = game_mode
 
+    clf_1 = None
+    clf_2 = None
     if process_mode:
         if game_mode == 'singleplayer':
             clf_1 = joblib.load(open(f'assets/classifier_data/classifier_{clf_loading_game_mode}_sub{player1_subject_id:02d}.joblib', 'rb'))
         elif game_mode == 'multiplayer':
             clf_2 = joblib.load(open(f'assets/classifier_data/classifier_{clf_loading_game_mode}_sub{player2_subject_id:02d}.joblib', 'rb'))
-    else:
-        clf_1 = None
-        clf_2 = None
+
 
     if not dev_mode:
         eeg_1_in = lsl_inlet('player', 1)  # Don't use special characters or uppercase for the name
@@ -84,12 +88,8 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     HEIGHT: int = int(display_info.current_h)
 
     level: list[list[int]] = copy.deepcopy(execution_boards[current_level])
-    flat_level_list = [
-        x
-        for xs in level
-        for x in xs
-    ]
-    cookies_at_the_beginning = flat_level_list.count(2)
+
+    cookies_at_the_beginning = flat_a_list(level).count(2)
     div_width: int = len(level[0])
     div_height: int = len(level)
     yscale: int = HEIGHT // div_height
@@ -177,6 +177,15 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     start_time_eeg_1: float = 0
     start_time_eeg_2: float = 0
 
+
+    if game_mode=='calibration2':
+        desired_directions_map=desired_directions[current_level]
+        desired_direction_player_1 = desired_directions_map[0]
+        desired_direction_player_2 = desired_directions_map[1]
+    else:
+        desired_direction_player_1 = 0
+        desired_direction_player_2 = 1
+
     def toggle_direction(player_direction):
         if player_direction == 2:
             player_direction_command = 3
@@ -187,6 +196,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         elif player_direction == 0:
             player_direction_command = 1
         return player_direction_command
+
 
     def draw_text(text: str):
         font = pygame.font.Font("assets/RetroFont.ttf", 300)
@@ -432,7 +442,10 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             eeg, t_eeg = eeg_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
             if eeg:
                 if game_mode == 'calibration2':  # This is the movement decider. Not by keys and not by EEG
-                    if random.randint(0,3) == 3:  # todo: the random has to slowly decrase so eveytime is more probable that they win. That can define when the calibration ends.
+                    remainder_to_record = 100 - player_eeg_data['class'].count(desired_direction) # From total class, how many of current type do I need?
+                    if remainder_to_record < 3:
+                        remainder_to_record = 3 # If I already have the max for this class, then move to the next one
+                    if random.randint(0,remainder_to_record) == 0:  # The more movements they have the luckier they get
                         prediction_movement = desired_direction
                     else:
                         prediction_movement = toggle_direction(player_direction_command)
@@ -446,7 +459,10 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                         random.randint(0, len(allowed_movement_random) - 1)]  # exclusive range
 
                 player_eeg_data['time'].append(eeg)
-                player_eeg_data['class'].append(player_direction_command)
+                if game_mode == 'calibration2':
+                    player_eeg_data['class'].append(desired_direction) # todo: is this suppose to be the lastest movement or the old movement?
+                else:
+                    player_eeg_data['class'].append(prediction_movement)
                 player_eeg_data['game index'].append(len(player_total_game_turns))
                 player_eeg_data['movement index'].append(len(player_level_turns))
                 print(f'Classifier returned: {prediction_movement}')
@@ -559,12 +575,8 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             ## Section to decide if the game is finished.
             # Suggestion: Put it in a Function and call it instead
             game_won = False
-            flat_level_list = [
-                x
-                for xs in level
-                for x in xs
-            ]
-            if cookies_at_the_beginning != flat_level_list.count(2):
+
+            if cookies_at_the_beginning != flat_a_list(level).count(2):
                 if play_won_flag:
                     if cookie_winner_1_num:
                         cookie_winner.append(cookie_winner_1_num)
@@ -645,13 +657,12 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                         if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_speed = original_speed
                     if current_level < len(execution_boards):
                         level = copy.deepcopy(execution_boards[current_level])
-                        flat_level_list = [
-                            x
-                            for xs in level
-                            for x in xs
-                        ]
-                        cookies_at_the_beginning = flat_level_list.count(2)
+                        cookies_at_the_beginning = flat_a_list(level).count(2)
                         start_1 = player_1_start_execution_positions[current_level]
+                        if game_mode == 'calibration2':
+                            desired_directions_map = desired_directions[current_level]
+                            desired_direction_player_1 = desired_directions_map[0]
+                            desired_direction_player_2 = desired_directions_map[1]
                         if game_mode == 'multiplayer' or game_mode == 'calibration2':
                             start_2 = player_2_start_execution_positions[current_level]
                             player_2_direction = start_2[2]
@@ -707,7 +718,11 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         file.write(f'player_2_turns, {player_2_total_game_turns}\n')
         file.close()
 
-        if 'calibration' in game_mode and process_mode: # If a calibration mode was run, then train the classifier for the next round
-            BrainCommand_train(game_mode, player1_subject_id)
+        if process_mode: # If a calibration mode was run, then train the classifier for the next round
+            if 'calibration' in game_mode:
+                BrainCommand_train(game_mode, player1_subject_id)
+            # Commented because so far the second person is fake
+            #if game_mode == 'calibration2':
+            #    BrainCommand_train(game_mode, player2_subject_id)
 
     print("Congrats! Game finished :D")
