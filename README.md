@@ -6,7 +6,7 @@
 4. How to run
 5. License
 ## 1. Introduction
-Brain-Computer Interfaces (BCI) are a groundbreaking technology that have become a subject of public interest, leading to rapid growth in their development and research. A BCI uses a person's brain activity, taken from an electroencephalograph (EEG) signal, and classifies it, turning their thoughts into a real-life activity. Brain Command is a BCI designed to classify EEG signals in real time, turning brain activity into actions in a video game.
+Brain-Computer Interfaces (BCI) are a groundbreaking technology that have become a subject of public interest, leading to rapid growth in their development and research. A BCI uses a person's brain activity, taken from an electroencephalograph (EEG) signal, and classifies it, turning their thoughts into a real-life activity. **Brain Command** is a BCI designed to classify EEG signals in real time, turning brain activity into actions in a video game.
 ## 2. Requirements
 * In order to run Brain Command the user must  have a python compiler and execuction environment, and install the libraries found in *requirements.txt*. This file is found in the repository. 
 * To send instructions into the game we need a signal input. This signal can be either a virtually simulated signal, or a  real EEg signal collected in real time.
