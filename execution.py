@@ -61,13 +61,13 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
 
 
     if game_mode=='singleplayer' or game_mode == 'multiplayer':
-        clf_loading_game_mode = 'calibration1' # 'calibration2' it can be either. PENDING FOR DECISION
+        clf_loading_game_mode = 'calibration2' # 'calibration2' it can be either. PENDING FOR DECISION
     else:
         clf_loading_game_mode = game_mode
 
     clf_1 = None
     clf_2 = None
-    if process_mode:
+    if process_mode and dev_mode==False:
         if game_mode == 'singleplayer':
             clf_1 = joblib.load(open(f'assets/classifier_data/classifier_{clf_loading_game_mode}_sub{player1_subject_id:02d}.joblib', 'rb'))
         elif game_mode == 'multiplayer':
@@ -432,6 +432,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         x_array = data_normalization(x_array)
         probs_array = clf.predict_proba(x_array)[0]
         valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)]
+        print(valid_array)
         return np.argmax(
             valid_array)  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
 
@@ -552,7 +553,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_turns_allowed = check_position(player_2_direction,
                                                                                    player_2_center_x, player_2_center_y,
                                                                                    level)
-            if game_mode == 'calibration1':
+            if not dev_mode and game_mode == 'calibration1':
                 corner_color, start_time_eeg_1, moving_flag_1 = ask_for_input(calibration_style, player1_eeg_data, player_1_level_turns, moving_flag_1, eeg_1_in, start_time_eeg_1, player_1_total_game_turns, player_1_direction, corner_color)
 
             if not dev_mode and game_mode!='calibration1':
