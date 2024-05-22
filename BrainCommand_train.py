@@ -25,6 +25,8 @@ from scipy import signal
 from mne.preprocessing import Xdawn
 from mne import EpochsArray
 import mne
+from autoreject import AutoReject
+
 # MDM() Always nan at the end
 classifiers = [ # The Good, Medium and Bad is decided on Torres dataset. This to avoid most of the processings.
     # KNeighborsClassifier(3), # Good
@@ -105,7 +107,7 @@ def get_best_classificator_and_test_accuracy(data, labels, estimators):
 def data_normalization(data):
     min_val = np.min(data)
     max_val = np.max(data)
-    scaled_data = (data - min_val) / (max_val - min_val)
+    scaled_data = (data - min_val) + 0.00000001 / (max_val - min_val)
     return scaled_data
 
 from collections import defaultdict
@@ -119,18 +121,6 @@ def indexes(l, chosen_key):
         if key == chosen_key:
             return value
 
-def remove_too_different_trials_v2(data: np.array, label) -> np.array:
-    data_cleaned = []
-    label_cleaned = []
-    for word_index in range(len(dataset_info["target_names"])):
-        indexes_from_word = indexes(label, word_index)
-        for i_index in indexes_from_word:
-            trial = data[i_index,:,:]
-            trial_label = label[i_index]
-            if np.mean(np.abs(trial)) < np.mean(np.abs(data[indexes_from_word,:,:]))*1.5 :
-                data_cleaned.append(trial)
-                label_cleaned.append(trial_label)
-    return np.array(data_cleaned), label_cleaned
 
 def braincommand_dataset_loader(game_mode: str, subject_id: int):
     complete_information = pd.read_csv(f'assets/game_saved_files/eeg_data_{game_mode}_sub{subject_id:02d}.csv')
@@ -153,9 +143,49 @@ def braincommand_dataset_loader(game_mode: str, subject_id: int):
     x_array = x_array[:, :, :-9] # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
     x_array = np.transpose(x_array, (0, 2, 1))
     x_array = signal.detrend(x_array)
-    x_array, label = remove_too_different_trials_v2(x_array, label)
+    #x_array, label = convert_to_epochs(x_array, label)
     x_array = data_normalization(x_array)
     return x_array, label
+
+def class_selection(dataX, dataY, event_dict: dict, selected_classes: list[int]):
+    dataX_selected: list = []
+    dataY_selected: list = []
+    for dataX_idx, dataY_idx in zip(dataX, dataY):
+        if dataY_idx in selected_classes:
+            dataX_selected.append(dataX_idx)
+            dataY_selected.append(dataY_idx)
+    dataX_selected_np = np.asarray(dataX_selected)
+    dataY_selected_df = pd.Series(dataY_selected)
+
+    label_remap = {dataY_original: dataY_remap_idx for dataY_remap_idx, dataY_original in enumerate(selected_classes)}
+
+    event_dict = {key: label_remap[value] for key, value in event_dict.items()
+                  if value in selected_classes}
+
+    return dataX_selected_np, np.asarray(dataY_selected_df.replace(label_remap)), event_dict
+
+def convert_to_epochs(data, labels):
+    events = np.column_stack((
+        np.arange(0, dataset_info['sample_rate'] * data.shape[0], dataset_info['sample_rate']),
+        np.zeros(len(labels), dtype=int),
+        np.array(labels),
+    ))
+
+    event_dict = {'Arriba': 2, 'Abajo': 3, 'Derecha': 0, 'Izquierda': 1}
+
+    epochs = EpochsArray(data, info=mne.create_info(
+        sfreq=dataset_info['sample_rate'], ch_types='eeg', ch_names=dataset_info['channels_names']), events=events,
+                         event_id=event_dict)
+    montage = mne.channels.make_standard_montage('standard_1020')
+    epochs.set_montage(montage)
+
+    ar = AutoReject()
+    epochs = ar.fit_transform(epochs)
+    data = epochs.get_data()
+    label = epochs.events[:, -1]
+
+    #data, label, event_dict = class_selection(data, label, event_dict, selected_classes=[0,1,2])
+    return data, label
 
 def simple_train(data, labels):
     clf = Pipeline([("Cova", Covariances()), ("ts", TangentSpace()), ('clf', ClfSwitcher())]) # This is probably the best one, at least for Torres
@@ -170,7 +200,7 @@ def BrainCommand_train(game_mode: str, subject_id: int) -> None:
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
 if __name__ == "__main__":
-    subject_id = 21
+    subject_id = 22
     game_mode = 'calibration2'
 
     BrainCommand_train(game_mode, subject_id) #todo: once it happened that it only recognized up and down in the solo, you will need that the classfiers is way better
