@@ -92,9 +92,7 @@ start_closed_map_down_player_1 = [12, 13, 1]
 start_closed_map_down_player_2 = [12, 19, 1]
 desired_directions_down = [3, 2] # [player1, player2]
 
-# if the direction is 2, it must toggle between 2 and 3 and by random, sometimes go right
-
-closed_map_boards=[closed_map_horizontal, closed_map_horizontal, closed_map_vertical, closed_map_vertical] * 4
-closed_map_player_1_positions=[start_closed_map_right_player_1, start_closed_map_left_player_1, start_closed_map_up_player_1, start_closed_map_down_player_1] * 4
-closed_map_player_2_positions=[start_closed_map_right_player_2, start_closed_map_left_player_2, start_closed_map_up_player_2, start_closed_map_down_player_2] * 4
-desired_directions = [desired_directions_right, desired_directions_left, desired_directions_up, desired_directions_down] * 4
+closed_map_boards=[closed_map_horizontal, closed_map_horizontal, closed_map_vertical, closed_map_vertical] * 6
+closed_map_player_1_positions=[start_closed_map_right_player_1, start_closed_map_left_player_1, start_closed_map_up_player_1, start_closed_map_down_player_1] * 6
+closed_map_player_2_positions=[start_closed_map_right_player_2, start_closed_map_left_player_2, start_closed_map_up_player_2, start_closed_map_down_player_2] * 6
+desired_directions = [desired_directions_right, desired_directions_left, desired_directions_up, desired_directions_down] * 6
