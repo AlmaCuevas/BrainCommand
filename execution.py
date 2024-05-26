@@ -160,7 +160,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         player_1_speed: int = 5
         original_speed: int = 5
         player_2_speed: int = 5
+        minimum_total_trials_per_movement = 3
     else:
+        minimum_total_trials_per_movement = 100
         player_1_speed: int = 5
         original_speed: int = 5
         player_2_speed: int = 5
@@ -204,7 +206,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         screen.blit(txt_render,
                     (WIDTH / 2 - txt_render.get_width() / 2, HEIGHT / 2 - txt_render.get_height() / 2))
 
-    def draw_misc(player_num: int, game_mode: str):
+    def draw_misc(player_num: int, game_mode: str, current_level: int):
         level_done = font.render("¡Nivel Completado!", True, "lightgrey")
         if game_mode == 'multiplayer':
             congrats_winner_str = f"¡Felicidades jugador {player_num}!"
@@ -237,7 +239,10 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     def check_collisions(last_activate_turn_tile:list, player_speed:int, time_to_corner:int, turns_allowed, direction:int, center_x:int,
                          center_y:int, level:list, player_num:int, start_player_time, calibration_moving_flag: bool = True):
         cookie_winner_num = 0
-        if player_num == 2:
+        if dev_mode:
+            right_volume = 0
+            left_volume = 0
+        elif player_num == 2:
             right_volume = 0
             left_volume = 1
         else:
@@ -443,7 +448,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             eeg, t_eeg = eeg_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
             if eeg:
                 if game_mode == 'calibration2':  # This is the movement decider. Not by keys and not by EEG
-                    remainder_to_record = 100 - player_eeg_data['class'].count(desired_direction) # From total class, how many of current type do I need?
+                    remainder_to_record = minimum_total_trials_per_movement - player_eeg_data['class'].count(desired_direction) # From total class, how many of current type do I need?
                     if remainder_to_record < 3:
                         remainder_to_record = 3 # If I already have the max for this class, then move to the next one
                     if random.randint(0,remainder_to_record) == 0:  # The more movements they have the luckier they get
@@ -541,14 +546,18 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         else:
             level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y)
 
-        draw_misc(cookie_winner[-1:], game_mode)
+
+
+        player_1_last_direction = draw_player(player_1_direction, player_1_last_direction, player_1_player_x,
+                                              player_1_player_y, player_1_images, moving_flag_1)
+
+        if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_last_direction = draw_player(
+            player_2_direction, player_2_last_direction, player_2_player_x, player_2_player_y, player_2_images)
+
+        draw_misc(cookie_winner[-1:], game_mode, current_level)
+
 
         if moving and not game_won and not game_over:
-            player_1_last_direction = draw_player(player_1_direction, player_1_last_direction, player_1_player_x, player_1_player_y, player_1_images, moving_flag_1)
-            if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_last_direction = draw_player(player_2_direction, player_2_last_direction, player_2_player_x, player_2_player_y, player_2_images)
-
-
-
             player_1_turns_allowed = check_position(player_1_direction, player_1_center_x, player_1_center_y, level)
             if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_turns_allowed = check_position(player_2_direction,
                                                                                    player_2_center_x, player_2_center_y,
@@ -646,7 +655,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                     # I think I forgot to delete this before:
                     #if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_total_game_turns.append(player_2_level_turns[1:])
                     run = False
-                elif event.key == pygame.K_SPACE and game_won:
+                elif game_won and (event.key == pygame.K_SPACE or (game_mode=='calibration 2' and current_level % 4 == 0)): # In calibration, every 4 maps it gives a break:
                     play_won_flag = True
                     startup_counter = 0
                     current_level += 1
