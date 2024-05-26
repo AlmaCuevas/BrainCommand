@@ -33,6 +33,10 @@ Example:
 ```
 python main.py --player1 23 --player2 20
 ```
+If you don't have an EEG lsl device available you can use the synthetic data from OpenBCI or you can use the dev mode of the game and use the keyboard arrows.
+```
+python main.py --dev_mode True
+```
 3. Play the tutorial for a detailed guide to perform the imagined speech for the game.
 4. Select "Calibration 1" in the menu if there is only 1 player and you want to perform a maze calibration. Follow the steps shown in the calibration and configure the signal adquisition environment.
 5. Select "Calibration 2" in the menu if there are 2 players (either real players or one player plus synthetic data) and you want to perform an square map calibration. Follow the steps shown in the calibration and configure the signal adquisition environment.
