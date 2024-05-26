@@ -283,32 +283,32 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         if direction == 2 or direction == 3:
             if xscale // 3 <= center_x % xscale <= xscale:
                 if level[(center_y + half_scale) // yscale][center_x // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y + half_scale)), 20, 1)
+                    #if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y + half_scale)), 20, 1)
                     turns[3] = True
                 if level[(center_y - half_scale - 10) // yscale][center_x // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y - half_scale - 10)), 20, 1)
+                    #if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y - half_scale - 10)), 20, 1)
                     turns[2] = True
             if yscale // 3 <= center_y % yscale <= yscale:
                 if level[center_y // yscale][(center_x - xscale) // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x - xscale, center_y), 20, 1)
+                    #if dev_mode: pygame.draw.circle(screen, 'pink', (center_x - xscale, center_y), 20, 1)
                     turns[1] = True
                 if level[center_y // yscale][(center_x + xscale) // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x + xscale, center_y), 20, 1)
+                    #if dev_mode: pygame.draw.circle(screen, 'pink', (center_x + xscale, center_y), 20, 1)
                     turns[0] = True
         elif direction == 0 or direction == 1:
             if xscale // 3 <= center_x % xscale <= xscale:
                 if level[(center_y + yscale) // yscale][center_x // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'green', (center_x, center_y + yscale), 20, 1)
+                    #if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, center_y + yscale), 20, 1)
                     turns[3] = True
                 if level[(center_y - yscale) // yscale][center_x // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'green', (center_x, center_y - yscale), 20, 1)
+                    #if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, center_y - yscale), 20, 1)
                     turns[2] = True
             if yscale // 3 <= center_y % yscale <= yscale:
                 if level[center_y // yscale][(center_x - half_scale - 8) // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'white', ((center_x - half_scale - 8), center_y), 20, 1)
+                    #if dev_mode: pygame.draw.circle(screen, 'pink', ((center_x - half_scale - 8), center_y), 20, 1)
                     turns[1] = True
                 if level[center_y // yscale][(center_x + half_scale) // xscale] < 3:
-                    if dev_mode: pygame.draw.circle(screen, 'red', ((center_x + half_scale), center_y), 20, 1)
+                    #if dev_mode: pygame.draw.circle(screen, 'pink', ((center_x + half_scale), center_y), 20, 1)
                     turns[0] = True
         return turns
 
