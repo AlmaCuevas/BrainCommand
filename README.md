@@ -1,10 +1,12 @@
 # Brain Command
 ## Table of Contents
-1. Introduction
-2. Requirements
-3. Files in Repository 
-4. How to run
-5. License
+1. [Introduction](https://github.com/AlmaCuevas/BrainCommand/blob/main/README.md#1-introduction)
+2. [Requirements](https://github.com/AlmaCuevas/BrainCommand#2-requirements)
+3. [Files in Repository](https://github.com/AlmaCuevas/BrainCommand#3-files-in-repository)
+4. [How to run](https://github.com/AlmaCuevas/BrainCommand#4-how-to-run)
+5. [Credits](https://github.com/AlmaCuevas/BrainCommand#5-credits)
+6. [References](https://github.com/AlmaCuevas/BrainCommand#6-references)
+7. [License](https://github.com/AlmaCuevas/BrainCommand#7-license)
 ## 1. Introduction
 Brain-Computer Interfaces (BCI) are a groundbreaking technology that have become a subject of public interest, leading to rapid growth in their development and research. A BCI uses a person's brain activity, taken from an electroencephalograph (EEG) signal, and classifies it, turning their thoughts into a real-life activity. **Brain Command** is a BCI designed to classify EEG signals in real time, turning brain activity into actions in a video game.
 ## 2. Requirements
