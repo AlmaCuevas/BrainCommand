@@ -95,10 +95,11 @@ def get_best_classificator_and_test_accuracy(data, labels, estimators):
 
     cv = StratifiedKFold(n_splits=4, shuffle=True, random_state=42)
     clf = GridSearchCV(estimator=estimators, param_grid=param_grid, cv=cv) # https://stackoverflow.com/questions/52580023/how-to-get-the-best-estimator-parameters-out-from-pipelined-gridsearch-and-cro
+
     clf.fit(data, labels)
 
     acc = clf.best_score_ # Best Test Score
-    print("Best Test Score: \n{}\n".format(clf.best_score_))
+    print("Best Test Score: \n{}\n".format(acc))
 
     if acc <= 0.25:
         acc = np.nan
@@ -200,8 +201,7 @@ def BrainCommand_train(game_mode: str, subject_id: int) -> None:
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
 if __name__ == "__main__":
-    subject_id = 22
+    subject_id = 27
     game_mode = 'calibration2'
 
-    BrainCommand_train(game_mode, subject_id) #todo: once it happened that it only recognized up and down in the solo, you will need that the classfiers is way better
-    #todo: rn it works nothing at all.
+    BrainCommand_train(game_mode, subject_id)
