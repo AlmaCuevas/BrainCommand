@@ -51,7 +51,7 @@ dataset_info = {  # BrainCommand
                     'sample_rate': 250,
                     'channels_names': ['Fz', 'C3', 'Cz', 'C4', 'Pz', 'PO7', 'Oz', 'PO8'],  # This is from the original Unicorn cap
                     'subjects': 0,  # PENDING
-                    'total_trials': 0,  # VARIABLE SINCE THE SUBJECT HAS TOTAL CONTROL OF HOW MANY MOVEMENTS THEY WANT TO DO
+                    'total_trials': 228,
                 }
 
 class ClfSwitcher(BaseEstimator):
