@@ -63,3 +63,4 @@ This code was inspired from
   * For a tutorial you can check: https://www.youtube.com/watch?v=9H27CimgPsQ&t=684s
 * https://github.com/AlmaCuevas/Gamified_Imagined_Speech_Paradigm
 ## 7. License
+[MIT License](https://github.com/AlmaCuevas/BrainCommand/blob/main/LICENSE)
