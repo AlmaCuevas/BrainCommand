@@ -78,4 +78,4 @@ And thanks to:
 * CONAHCYT
 * Neurotechs
 
-For supporting the proyect, making it possible.
+For supporting the project, making it possible.
