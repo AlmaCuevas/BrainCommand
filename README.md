@@ -64,3 +64,18 @@ This code was inspired from
 * https://github.com/AlmaCuevas/Gamified_Imagined_Speech_Paradigm
 ## 7. License
 [MIT License](https://github.com/AlmaCuevas/BrainCommand/blob/main/LICENSE)
+
+## 8. Thanks
+Special thanks to:
+* PhD. Luz Maria Alonso Valerdi
+* PhD. Alejandro Antonio Torres García
+* PhD. Luis Alberto Muñoz Ubando
+For supervising the proyect.
+
+And thanks to:
+
+* ITESM
+* CONAHCYT
+* Neurotechs
+
+For supporting the project, making it possible.
