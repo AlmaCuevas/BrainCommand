@@ -27,6 +27,8 @@ from mne import EpochsArray
 import mne
 from autoreject import AutoReject
 
+# todo: install the voting systema as a package and then import it here, delete the repetitions
+
 # MDM() Always nan at the end
 classifiers = [ # The Good, Medium and Bad is decided on Torres dataset. This to avoid most of the processings.
     # KNeighborsClassifier(3), # Good
@@ -193,15 +195,30 @@ def simple_train(data, labels):
     classifier, acc = get_best_classificator_and_test_accuracy(data, labels, clf)
     return classifier, acc
 
-def BrainCommand_train(game_mode: str, subject_id: int) -> None:
+def BrainCommand_train(game_mode: str, subject_id: int, simple_flag: bool = True) -> None:
     data, labels = braincommand_dataset_loader(game_mode, subject_id)
-    classifier, acc = simple_train(data, labels)
+    if simple_flag:
+        classifier, acc = simple_train(data, labels)
+    else:
+        """
+        models_outputs, processing_name, columns_list, transform_methods = group_methods_train(
+            "braincommand",
+            subject_id,
+            methods,
+            models_outputs,
+            data,
+            _,
+            labels,
+            dataset_info,
+        )
+        """
+
     joblib.dump(classifier, f'assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}.joblib')
 
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
 if __name__ == "__main__":
-    subject_id = 27
+    subject_id = 1
     game_mode = 'calibration2'
 
     BrainCommand_train(game_mode, subject_id)

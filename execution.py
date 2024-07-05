@@ -31,7 +31,7 @@ def flat_a_list(list_to_flat: list):
         for x in xs
     ]
 
-def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = False): # Process mode will train after a calibration and test during an execution
+def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = True): # Process mode will train after a calibration and test during an execution
     fs: int = 250 # Unicorn Hybrid Black
     calibration_style = "only_blue" # or "green_blue" . "green_blue" doesn't make sense with the closed-map: calibration 2.
 
@@ -58,7 +58,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     elif game_mode == 'singleplayer':
         player_1_start_execution_positions = short_map_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
-        execution_boards = singleplayer_execution_boards
+        execution_boards = short_map_boards
     elif game_mode=='free singleplayer':
         player_1_start_execution_positions = singleplayer_start_execution_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
@@ -176,6 +176,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         original_speed: int = 15
         player_2_speed: int = 15
 
+    failed_movements = 0
     minimum_total_trials_per_movement = 20
     moving: bool = False
     startup_counter: int = 0
@@ -198,7 +199,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         desired_directions_map=desired_directions[current_level]
         desired_direction_player_1 = desired_directions_map[0]
         desired_direction_player_2 = desired_directions_map[1]
-    elif game_mode=='calibration3':
+    elif game_mode=='calibration3' or game_mode=='singleplayer':
         desired_directions_map=short_map_directions[current_level]
 
 
@@ -206,6 +207,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         play_won_flag = True
         startup_counter = 0
         desired_directions_map = []
+        failed_movements = 0
         current_level += 1
         if dev_mode:
             player_1_speed = original_speed
@@ -221,7 +223,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                 desired_directions_map = desired_directions[current_level]
                 desired_direction_player_1 = desired_directions_map[0]
                 desired_direction_player_2 = desired_directions_map[1]
-            elif game_mode == 'calibration3':
+            elif game_mode == 'calibration3' or game_mode == 'singleplayer':
                 desired_directions_map = short_map_directions[current_level]
             if game_mode == 'multiplayer' or game_mode == 'calibration2':
                 start_2 = player_2_start_execution_positions[current_level]
@@ -237,7 +239,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         player_1_level_turns = []
         if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_level_turns = []
 
-        return current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, game_won, play_won_flag, startup_counter, player_1_speed, player_1_level_turns, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2, desired_directions_map
+        return current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, game_won, play_won_flag, startup_counter, player_1_speed, player_1_level_turns, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2, desired_directions_map, failed_movements
 
     def toggle_direction(player_direction):
         if player_direction == 2:
@@ -290,12 +292,12 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     def check_collisions(last_activate_turn_tile:list, player_speed:int, time_to_corner:int, turns_allowed, direction:int, center_x:int,
                          center_y:int, level:list, player_num:int, start_player_time, calibration_moving_flag: bool = True):
         cookie_winner_num = 0
-        if player_num == 2:
-            right_volume = 0
+        if player_num == 2: # Change values in case you want to control volume per ear
+            right_volume = 1
             left_volume = 1
         else: # player1
             right_volume = 1
-            left_volume = 0
+            left_volume = 1
         corner_check = copy.deepcopy(turns_allowed)
         corner_check[direction] = False
         if level[center_y // yscale][center_x // xscale] == 1:
@@ -489,7 +491,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         return np.argmax(
             valid_array)  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
 
-    def decision_maker(eeg_in, player_total_game_turns, desired_direction: int, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], clf, desired_directions_map: list=[]):
+    def decision_maker(eeg_in, player_total_game_turns, desired_direction: int, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], clf, desired_directions_map: list=[], failed_movements: int = 0, level: list=[], last_activate_turn_tile: list=[], time_to_corner: int =0):
         ## Section to process direction prediction with the EEG.
         movement_option = [0, 1, 2, 3]
         if time.time() - start_time_eeg > 1.4 and player_speed == 0:
@@ -504,9 +506,18 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                     else:
                         prediction_movement = toggle_direction(player_direction_command)
                 elif game_mode == 'calibration3':
-                    prediction_movement = desired_directions_map[len(player_level_turns)]
-                elif process_mode and len(player_level_turns)!=0: # todo: The first movement never had the data complete, this could mean that most of the recorded data is not the blue square, aka, imagined speech
-                    prediction_movement = eeg_cleaning_to_prediction(eeg, clf, player_turns_allowed) # todo: do the threshold thing, it is annoying when people are not trying and the character moves anyway, we loose credibility. does a threshold difference is enough? for exeample if the max is less than 0.1 better than the other ones maybe its not enough
+                    prediction_movement = desired_directions_map[len(player_level_turns)-failed_movements]
+                elif process_mode and len(player_level_turns)!=0: # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
+                    eeg_prediction_movement = eeg_cleaning_to_prediction(eeg, clf, player_turns_allowed)
+                    print(desired_directions_map)
+                    print(desired_directions_map[len(player_level_turns)-failed_movements])
+                    if eeg_prediction_movement == desired_directions_map[len(player_level_turns)-failed_movements] or len(set(player_level_turns[-10:])) == 1: # If it fails more than 10 times, let the user move on.
+                        prediction_movement = desired_directions_map[len(player_level_turns)-failed_movements]
+                    else:
+                        prediction_movement = player_level_turns[-1]
+                        failed_movements+=1
+                        level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
+                        time_to_corner = 0
                 else:
                     allowed_movement_random = [x for x, flag in zip(movement_option, player_turns_allowed) if
                                                  flag]
@@ -526,7 +537,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                 player_level_turns.append(player_direction_command)
                 player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
 
-        return player_speed, player_direction_command, player_level_turns, player_eeg_data
+        return player_speed, player_direction_command, player_level_turns, player_eeg_data, failed_movements, level, time_to_corner
 
     def ask_for_input(calibration_style, eeg_data, level_turns, moving_flag, eeg_in, start_time_eeg, total_game_turns,
                       direction_command, corner_color):
@@ -591,7 +602,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         if game_mode == 'multiplayer' or game_mode == 'calibration2':
             player_2_center_x: int = player_2_player_x + xscale // 2
             player_2_center_y: int = player_2_player_y + yscale // 2
-            level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y, player_2_center_x, player_2_center_y)
+            level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y, player_2_center_y)
+        elif game_mode == 'singleplayer' or game_mode == 'calibration3':
+            level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y)
         else:
             level = draw_board(level, color, corner_color, player_1_center_x, player_1_center_y)
 
@@ -614,11 +627,11 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                 corner_color, start_time_eeg_1, moving_flag_1 = ask_for_input(calibration_style, player1_eeg_data, player_1_level_turns, moving_flag_1, eeg_1_in, start_time_eeg_1, player_1_total_game_turns, player_1_direction_command, corner_color)
 
             if not dev_mode and game_mode!='calibration1':
-                player_1_speed, player_1_direction_command, player_1_level_turns, player1_eeg_data = decision_maker(
+                player_1_speed, player_1_direction_command, player_1_level_turns, player1_eeg_data, failed_movements, level, player_1_time_to_corner = decision_maker(
                     eeg_1_in, player_1_total_game_turns, desired_direction_player_1, player_1_speed, start_time_eeg_1, player_1_turns_allowed, player1_eeg_data,
-                    player_1_direction_command, player_1_level_turns, clf_1, desired_directions_map)
+                    player_1_direction_command, player_1_level_turns, clf_1, desired_directions_map, failed_movements, level, player_1_last_activate_turn_tile, player_1_time_to_corner)
                 if game_mode == 'multiplayer' or game_mode == 'calibration2':
-                    player_2_speed, player_2_direction_command, player_2_level_turns, player2_eeg_data = decision_maker(
+                    player_2_speed, player_2_direction_command, player_2_level_turns, player2_eeg_data, _, _, _ = decision_maker(
                         eeg_2_in, player_2_total_game_turns, desired_direction_player_2, player_2_speed, start_time_eeg_2, player_2_turns_allowed, player2_eeg_data,
                         player_2_direction_command, player_2_level_turns, clf_2)
 
@@ -664,7 +677,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             if startup_counter < 300: # ALways has 200 from last time, so its actually waiting only for 100 more
                 startup_counter += 1 # Automatic reset
             else:
-                current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, game_won, play_won_flag, startup_counter, player_1_speed, player_1_level_turns, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2, desired_directions_map = reset_game(current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2)
+                current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, game_won, play_won_flag, startup_counter, player_1_speed, player_1_level_turns, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2, desired_directions_map, failed_movements = reset_game(current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2)
         else:
             misc_color = "lightpink4" # if not-automatic then another color
 
@@ -735,7 +748,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                             player_2_direction_command = player_2_direction
 
         pygame.display.flip()
-    print(player_1_level_turns)
+
     if not dev_mode:
         player1_eeg_data['movement index'] = player1_eeg_data['movement index'][1:] # Avoid the init, consequence is that calibration1 the first one is 1 instead of 0. No better solution found so far
         pd.DataFrame(player1_eeg_data).to_csv(

@@ -5,8 +5,8 @@ from BrainCommand_train import ClfSwitcher # without it, the model doesn't load 
 parser = argparse.ArgumentParser(description="BrainCommand game. What ID do your players have?")
 
 parser.add_argument("--dev_mode", type=bool, help="Are you developing? True/False", required=False, default=False)
-parser.add_argument("--player1", help="Player 1 ID", required=False, default=0)
-parser.add_argument("--player2", type=int, help="Player 2 ID", required=False, default=1)
+parser.add_argument("--player1", help="Player 1 ID", required=False, default=99)
+parser.add_argument("--player2", type=int, help="Player 2 ID", required=False, default=98)
 
 args = parser.parse_args()
 
