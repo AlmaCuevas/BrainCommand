@@ -2,3 +2,5 @@
 /assets/game_saved_files/
 /assets/classifier_data/
 **/__pycache__
+.DS_Store
+.idea/

@@ -1,7 +1,10 @@
 import copy
 import random
 
-from BrainCommand_train import BrainCommand_train, data_normalization
+from processing_eeg_methods.classifiers_classes import ProcessingMethod, selected_transformers_function
+from processing_eeg_methods.data_utils import data_normalization
+
+from BrainCommand_classification import BrainCommand_train, BrainCommand_test
 from board_execution import multiplayer_execution_boards, multiplayer_player_1_start_execution_positions, multiplayer_player_2_start_execution_positions, singleplayer_start_execution_positions, singleplayer_execution_boards, calibration_player_1_start_execution_positions, calibration_execution_boards
 from board_execution_closed_map import closed_map_boards, closed_map_player_1_positions, closed_map_player_2_positions, desired_directions
 from board_execution_short_maps import short_map_boards, short_map_positions, short_map_directions
@@ -70,21 +73,23 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
 
 
     if 'singleplayer' in game_mode or game_mode == 'multiplayer':
-        clf_loading_game_mode = 'calibration3' # 'calibration2' it can be either.
+        processing_function_loading_game_mode = 'calibration3' # 'calibration2' it can be either.
     else:
-        clf_loading_game_mode = game_mode
+        processing_function_loading_game_mode = game_mode
 
-    clf_1 = None
-    clf_2 = None
+    processing_function_1 = None
+    processing_function_2 = None
     if process_mode and not dev_mode:
         if 'singleplayer' in game_mode or game_mode == 'multiplayer':
-            print("loaded clf1")
-            clf_1 = joblib.load(open(f'assets/classifier_data/classifier_{clf_loading_game_mode}_sub{player1_subject_id:02d}.joblib', 'rb'))
+            print("loaded processing_function 1")
+            processing_function_1 = selected_transformers_function().load(
+            f'assets/classifier_data/classifier_{processing_function_loading_game_mode}_sub{player1_subject_id:02d}'
+        )
         if game_mode == 'multiplayer':
-            print("loaded clf2")
-            clf_2 = joblib.load(open(f'assets/classifier_data/classifier_{clf_loading_game_mode}_sub{player2_subject_id:02d}.joblib', 'rb'))
-
-
+            print("loaded processing_function 2")
+            processing_function_2 = selected_transformers_function().load(
+            f'assets/classifier_data/classifier_{processing_function_loading_game_mode}_sub{player2_subject_id:02d}'
+        )
     if not dev_mode:
         eeg_1_in = lsl_inlet('player', 1)  # Don't use special characters or uppercase for the name
         if game_mode == 'multiplayer' or game_mode == 'calibration2':
@@ -478,20 +483,20 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                     )
         return level
 
-    def eeg_cleaning_to_prediction(eeg, clf, player_turns_allowed) -> int:
+    def eeg_cleaning_to_prediction(eeg, processing_function: ProcessingMethod, player_turns_allowed) -> int:
         x_array = np.array([eeg])
         x_array = x_array[:, :,
                   :-9]  # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
         x_array = np.transpose(x_array, (0, 2, 1))
         x_array = signal.detrend(x_array)
         x_array = data_normalization(x_array)
-        probs_array = clf.predict_proba(x_array)[0]
+        probs_array = BrainCommand_test(x_array, processing_function)[0]
         valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)]
         print(valid_array)
         return np.argmax(
             valid_array)  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
 
-    def decision_maker(eeg_in, player_total_game_turns, desired_direction: int, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], clf, desired_directions_map: list=[], failed_movements: int = 0, level: list=[], last_activate_turn_tile: list=[], time_to_corner: int =0):
+    def decision_maker(eeg_in, player_total_game_turns, desired_direction: int, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], processing_function, desired_directions_map: list=[], failed_movements: int = 0, level: list=[], last_activate_turn_tile: list=[], time_to_corner: int =0):
         ## Section to process direction prediction with the EEG.
         movement_option = [0, 1, 2, 3]
         if time.time() - start_time_eeg > 1.4 and player_speed == 0:
@@ -508,7 +513,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                 elif game_mode == 'calibration3':
                     prediction_movement = desired_directions_map[len(player_level_turns)-failed_movements]
                 elif process_mode and len(player_level_turns)!=0: # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
-                    eeg_prediction_movement = eeg_cleaning_to_prediction(eeg, clf, player_turns_allowed)
+                    eeg_prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed)
                     print(desired_directions_map)
                     print(desired_directions_map[len(player_level_turns)-failed_movements])
                     if eeg_prediction_movement == desired_directions_map[len(player_level_turns)-failed_movements] or len(set(player_level_turns[-10:])) == 1: # If it fails more than 10 times, let the user move on.
@@ -629,11 +634,11 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             if not dev_mode and game_mode!='calibration1':
                 player_1_speed, player_1_direction_command, player_1_level_turns, player1_eeg_data, failed_movements, level, player_1_time_to_corner = decision_maker(
                     eeg_1_in, player_1_total_game_turns, desired_direction_player_1, player_1_speed, start_time_eeg_1, player_1_turns_allowed, player1_eeg_data,
-                    player_1_direction_command, player_1_level_turns, clf_1, desired_directions_map, failed_movements, level, player_1_last_activate_turn_tile, player_1_time_to_corner)
+                    player_1_direction_command, player_1_level_turns, processing_function_1, desired_directions_map, failed_movements, level, player_1_last_activate_turn_tile, player_1_time_to_corner)
                 if game_mode == 'multiplayer' or game_mode == 'calibration2':
                     player_2_speed, player_2_direction_command, player_2_level_turns, player2_eeg_data, _, _, _ = decision_maker(
                         eeg_2_in, player_2_total_game_turns, desired_direction_player_2, player_2_speed, start_time_eeg_2, player_2_turns_allowed, player2_eeg_data,
-                        player_2_direction_command, player_2_level_turns, clf_2)
+                        player_2_direction_command, player_2_level_turns, processing_function_2)
 
             if moving_flag_1:
                 player_1_player_x, player_1_player_y = move_player(player_1_direction, player_1_turns_allowed, player_1_player_x, player_1_player_y, player_1_speed)
