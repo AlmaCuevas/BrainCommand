@@ -117,6 +117,8 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     timer = pygame.time.Clock()
     fps = 60  # This decides how fast the game goes.
     font = pygame.font.Font("assets/RetroFont.ttf", 30)
+    large_font = pygame.font.Font("assets/RetroFont.ttf", 50)
+    small_font = pygame.font.Font("assets/RetroFont.ttf", 20)
     color = "white"
     PI = math.pi
     total_game_time: list = []
@@ -271,12 +273,12 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
 
     def draw_misc(player_num: int, game_mode: str, misc_color: str):
         level_done = font.render("¡Nivel Completado!", True, "lightgrey")
-        press_space_to_continue = font.render("[Press space to continue]", True, "lightgrey")
+        press_space_to_continue = small_font.render("[Press space to continue]", True, "lightgrey")
         if game_mode == 'multiplayer':
             congrats_winner_str = f"¡Felicidades jugador {player_num}!"
         else:
             congrats_winner_str = "¡Felicidades!"
-        congrats_winner = font.render(congrats_winner_str, True, "lightgrey")
+        congrats_winner = large_font.render(congrats_winner_str, True, "lightgrey")
         if game_over:
             pygame.draw.rect(screen, "lightgrey", [WIDTH * .05, HEIGHT * .1, WIDTH * .9, HEIGHT * .8], 0, 10)
             pygame.draw.rect(screen, misc_color, [WIDTH * .1, HEIGHT * .2, WIDTH * .8, HEIGHT * .6], 0, 10)
