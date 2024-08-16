@@ -1,6 +1,5 @@
 from game import Game
 import argparse
-from BrainCommand_train import ClfSwitcher # without it, the model doesn't load in the game
 
 parser = argparse.ArgumentParser(description="BrainCommand game. What ID do your players have?")
 

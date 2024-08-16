@@ -7,7 +7,7 @@ from processing_eeg_methods.data_utils import data_normalization
 from BrainCommand_classification import BrainCommand_train, BrainCommand_test
 from board_execution import multiplayer_execution_boards, multiplayer_player_1_start_execution_positions, multiplayer_player_2_start_execution_positions, singleplayer_start_execution_positions, singleplayer_execution_boards, calibration_player_1_start_execution_positions, calibration_execution_boards
 from board_execution_closed_map import closed_map_boards, closed_map_player_1_positions, closed_map_player_2_positions, desired_directions
-from board_execution_short_maps import short_map_boards, short_map_positions, short_map_directions
+from board_execution_short_maps import short_map_boards, short_map_positions, short_map_directions, execution_short_map_boards, execution_short_map_positions, execution_short_map_directions
 import pygame
 import math
 import time
@@ -59,9 +59,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
         execution_boards = short_map_boards
     elif game_mode == 'singleplayer':
-        player_1_start_execution_positions = short_map_positions
+        player_1_start_execution_positions = execution_short_map_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
-        execution_boards = short_map_boards
+        execution_boards = execution_short_map_boards
     elif game_mode=='free singleplayer':
         player_1_start_execution_positions = singleplayer_start_execution_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
@@ -204,8 +204,11 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         desired_directions_map=desired_directions[current_level]
         desired_direction_player_1 = desired_directions_map[0]
         desired_direction_player_2 = desired_directions_map[1]
-    elif game_mode=='calibration3' or game_mode=='singleplayer':
+    elif game_mode=='calibration3':
         desired_directions_map=short_map_directions[current_level]
+    elif game_mode=='singleplayer':
+        desired_directions_map = execution_short_map_directions[current_level]
+
 
 
     def reset_game(current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2):
@@ -228,8 +231,10 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                 desired_directions_map = desired_directions[current_level]
                 desired_direction_player_1 = desired_directions_map[0]
                 desired_direction_player_2 = desired_directions_map[1]
-            elif game_mode == 'calibration3' or game_mode == 'singleplayer':
+            elif game_mode == 'calibration3':
                 desired_directions_map = short_map_directions[current_level]
+            elif game_mode=='singleplayer':
+                desired_directions_map = execution_short_map_directions[current_level]
             if game_mode == 'multiplayer' or game_mode == 'calibration2':
                 start_2 = player_2_start_execution_positions[current_level]
                 player_2_direction = start_2[2]
@@ -266,6 +271,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
 
     def draw_misc(player_num: int, game_mode: str, misc_color: str):
         level_done = font.render("¡Nivel Completado!", True, "lightgrey")
+        press_space_to_continue = font.render("[Press space to continue]", True, "lightgrey")
         if game_mode == 'multiplayer':
             congrats_winner_str = f"¡Felicidades jugador {player_num}!"
         else:
@@ -279,9 +285,11 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             screen.blit(thanks_for_participating,
                         (WIDTH / 2 - thanks_for_participating.get_width() / 2, HEIGHT / 2 - thanks_for_participating.get_height() / 2 + 100))
             screen.blit(congrats_winner,
-                            (WIDTH / 2 - congrats_winner.get_width() / 2, HEIGHT / 2 - congrats_winner.get_height() / 2 - 100))
+                            (WIDTH / 2 - congrats_winner.get_width() / 2, HEIGHT / 2 - congrats_winner.get_height() / 2 - 150))
             screen.blit(level_done,
                         (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2))
+            screen.blit(press_space_to_continue,
+                        (WIDTH / 2 - press_space_to_continue.get_width() / 2, HEIGHT / 2 - press_space_to_continue.get_height() / 2 + 200))
         elif game_won:
             pygame.draw.rect(screen, "lightgrey", [WIDTH * .05, HEIGHT * .1, WIDTH * .9, HEIGHT * .8], 0, 10)
             pygame.draw.rect(screen, misc_color, [WIDTH * .1, HEIGHT * .2, WIDTH * .8, HEIGHT * .6], 0, 10)
@@ -289,9 +297,11 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             screen.blit(prepare_for_next_level,
                         (WIDTH / 2 - prepare_for_next_level.get_width() / 2, HEIGHT / 2 - prepare_for_next_level.get_height() / 2 + 100))
             screen.blit(congrats_winner,
-                            (WIDTH / 2 - congrats_winner.get_width() / 2, HEIGHT / 2 - congrats_winner.get_height() / 2 - 100))
+                            (WIDTH / 2 - congrats_winner.get_width() / 2, HEIGHT / 2 - congrats_winner.get_height() / 2 - 150))
             screen.blit(level_done,
                         (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2))
+            screen.blit(press_space_to_continue,
+                        (WIDTH / 2 - press_space_to_continue.get_width() / 2, HEIGHT / 2 - press_space_to_continue.get_height() / 2 + 200))
 
 
     def check_collisions(last_activate_turn_tile:list, player_speed:int, time_to_corner:int, turns_allowed, direction:int, center_x:int,
@@ -730,7 +740,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                     #if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_total_game_turns.append(player_2_level_turns[1:])
                     run = False
                 elif game_won and event.key == pygame.K_SPACE:
-                    current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, game_won, play_won_flag, startup_counter, player_1_speed, player_1_level_turns, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2, desired_directions_map = reset_game(current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2)
+                    current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, game_won, play_won_flag, startup_counter, player_1_speed, player_1_level_turns, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2, desired_directions_map, failed_movements = reset_game(current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2)
             if dev_mode or game_mode == 'calibration1':
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_RIGHT and player_1_direction_command == 0:

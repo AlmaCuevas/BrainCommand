@@ -378,30 +378,34 @@ start_position_s2 = [17, 28, 3] # [x, y, direction to start]
 directions_s2 = [2, 0, 3, 0, 3, 1, 2, 0, 2, 1, 2, 0, 2, 0, 2, 1, 2, 1, 2, 0, 2, 1, 3] # List of directions to finish short map 2
 
 start_position_s3 = [15, 31, 3] # [x, y, direction to start]
-directions_s3 = [1, 2, 0, 2, 1, 2, 0, 3, 0, 2, 1, 2, 1, 2, 0, 2, 1, 2, 0, 2, 0, 3] # List of directions to finish short map 2
+directions_s3 = [1, 2, 0, 2, 1, 2, 0, 3, 0, 2, 1, 2, 1, 2, 0, 2, 1, 2, 0, 2, 0, 3] # List of directions to finish short map 3
 
 start_position_s4 = [15, 31, 0] # [x, y, direction to start]
-directions_s4 = [1, 2, 0, 2, 0, 3, 0, 2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 0, 2, 1, 2, 1, 3, 0, 3, 1] # List of directions to finish short map 2
+directions_s4 = [1, 2, 0, 2, 0, 3, 0, 2, 0, 2, 1, 2, 0, 2, 1, 2, 0, 2, 0, 2, 1, 2, 1, 3, 0, 3, 1] # List of directions to finish short map 4
 
 start_position_s5 = [23, 6, 3] # [x, y, direction to start]
-directions_s5 = [2, 1, 3, 1, 3, 0, 3, 1, 3, 0, 3, 0, 3, 1, 2, 1, 3, 0, 3, 1, 3, 0] # List of directions to finish short map 2
+directions_s5 = [2, 1, 3, 1, 3, 0, 3, 1, 3, 0, 3, 0, 3, 1, 2, 1, 3, 0, 3, 1, 3, 0] # List of directions to finish short map 5
 
 start_position_s6 = [10, 10, 1] # [x, y, direction to start]
-directions_s6 = [0, 2, 1, 2, 0, 3, 0, 3, 1, 3, 1, 3, 0, 3, 1, 3, 0, 3, 1, 3, 1, 2, 1, 3, 1, 3, 0] # List of directions to finish short map 2
+directions_s6 = [0, 2, 1, 2, 0, 3, 0, 3, 1, 3, 1, 3, 0, 3, 1, 3, 0, 3, 1, 3, 1, 2, 1, 3, 1, 3, 0] # List of directions to finish short map 6
 
 start_position_s7 = [19, 31, 0] # [x, y, direction to start]
-directions_s7 = [1, 2, 0, 2, 0, 2, 1, 2, 1, 2, 0, 2, 0, 2, 1, 2, 1, 3, 1, 2, 0, 3] # List of directions to finish short map 2
+directions_s7 = [1, 2, 0, 2, 0, 2, 1, 2, 1, 2, 0, 2, 0, 2, 1, 2, 1, 3, 1, 2, 0, 3] # List of directions to finish short map 7
 
 start_position_s8 = [10, 10, 3] # [x, y, direction to start]
-directions_s8 = [2, 0, 3, 1, 3, 0, 3, 0, 3, 1, 3, 1, 3, 0, 3, 1, 3, 0, 2, 1, 2, 1, 3] # List of directions to finish short map 2
+directions_s8 = [2, 0, 3, 1, 3, 0, 3, 0, 3, 1, 3, 1, 3, 0, 3, 1, 3, 0, 2, 1, 2, 1, 3] # List of directions to finish short map 8
 
 start_position_s9 = [10, 16, 1] # [x, y, direction to start]
-directions_s9 = [0, 2, 1, 2, 0, 2, 1, 2, 0, 3, 0, 3, 1, 3, 0, 3, 1, 3, 1, 2] # List of directions to finish short map 2
+directions_s9 = [0, 2, 1, 2, 0, 2, 1, 2, 0, 3, 0, 3, 1, 3, 0, 3, 1, 3, 1, 2] # List of directions to finish short map 9
 
 start_position_s10 = [13, 19, 2] # [x, y, direction to start]
-directions_s10 = [3, 0, 2, 0, 2, 1, 2, 0, 2, 1, 2, 1, 3, 0, 3, 1, 3, 0, 3, 1] # List of directions to finish short map 2
+directions_s10 = [3, 0, 2, 0, 2, 1, 2, 0, 2, 1, 2, 1, 3, 0, 3, 1, 3, 0, 3, 1] # List of directions to finish short map 10
 
 
-short_map_boards=[short_map_1, short_map_2, short_map_3, short_map_4, short_map_5, short_map_6, short_map_7, short_map_8]
-short_map_positions=[start_position_s1, start_position_s2, start_position_s3, start_position_s4, start_position_s5, start_position_s6, start_position_s7, start_position_s8]
-short_map_directions = [directions_s1, directions_s2, directions_s3, directions_s4, directions_s5, directions_s6, directions_s7, directions_s8]
+short_map_boards = [short_map_1, short_map_2, short_map_3, short_map_4, short_map_5, short_map_6, short_map_7, short_map_8, short_map_9, short_map_10]
+short_map_positions = [start_position_s1, start_position_s2, start_position_s3, start_position_s4, start_position_s5, start_position_s6, start_position_s7, start_position_s8, start_position_s9, start_position_s10]
+short_map_directions = [directions_s1, directions_s2, directions_s3, directions_s4, directions_s5, directions_s6, directions_s7, directions_s8, directions_s9, directions_s10]
+
+execution_short_map_boards = [short_map_1, short_map_3, short_map_5, short_map_7]
+execution_short_map_positions = [start_position_s1, start_position_s3, start_position_s5, start_position_s7]
+execution_short_map_directions = [directions_s1, directions_s3, directions_s5, directions_s7]
