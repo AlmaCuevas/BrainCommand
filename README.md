@@ -51,8 +51,7 @@ If you use this code in your project use the citation below:
     title={Brain Command},
     author={Alma Cuevas},
     year={2024},
-    url={[https://dx.doi.org/10.5281/zenodo.3874461](https://github.com/AlmaCuevas/BrainCommand)},
-    howpublished={\url{[https://github.com/AlessioZanga/PyEEGLab](https://github.com/AlmaCuevas/BrainCommand)}},
+    url={https://github.com/AlmaCuevas/BrainCommand}}
 }
 ```
 Check the game credits to know all the people behind the proyect!
