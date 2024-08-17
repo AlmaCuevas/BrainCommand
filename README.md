@@ -35,6 +35,10 @@ Example:
 ```
 python main.py --player1 23 --player2 20
 ```
+To visualize the signal in real time you can use Brain Streaming Layer:
+```
+bsl_stream_viewer -s player1
+```
 If you don't have an EEG lsl device available you can use the synthetic data from OpenBCI or you can use the dev mode of the game and use the keyboard arrows.
 ```
 python main.py --dev_mode True
