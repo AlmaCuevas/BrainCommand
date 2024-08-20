@@ -69,16 +69,14 @@ This code was inspired from
 [MIT License](https://github.com/AlmaCuevas/BrainCommand/blob/main/LICENSE)
 
 ## 8. Thanks
-Special thanks to:
+For supervising the project:
 * PhD. Luz Maria Alonso Valerdi
 * PhD. Alejandro Antonio Torres García
 * PhD. Luis Alberto Muñoz Ubando
-For supervising the proyect.
 
-And thanks to:
-
+For supporting the project, making it possible, thanks to:
 * ITESM
 * CONAHCYT
 * Neurotechs
 
-For supporting the project, making it possible.
+Thanks to all the collaborators on Neurotechs of the Brain-Computer Research Project.

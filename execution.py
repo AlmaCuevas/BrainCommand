@@ -35,8 +35,9 @@ def flat_a_list(list_to_flat: list):
 
 def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = True): # Process mode will train after a calibration and test during an execution
     fs: int = 250 # Unicorn Hybrid Black
-    calibration_style = "only_blue" # or "green_blue" . "green_blue" doesn't make sense with the closed-map: calibration 2.
-
+    calibration_style: str = "only_blue" # or "green_blue" . "green_blue" doesn't make sense with the closed-map: calibration 2.
+    automatic_movement_classes: list = [2, 3] # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
+    movement_option = [0, 1] # The two words that the person can choose
 
     player1_eeg_data: dict = {'time': [], 'class':[], 'movement index':[0], 'game index':[]} # [0] for init only, I delete it in the saving
     player1_subject_id = int(player1_subject_id)
@@ -508,9 +509,19 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             valid_array)  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
 
     def decision_maker(eeg_in, player_total_game_turns, desired_direction: int, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], processing_function, desired_directions_map: list=[], failed_movements: int = 0, level: list=[], last_activate_turn_tile: list=[], time_to_corner: int =0):
-        ## Section to process direction prediction with the EEG.
-        movement_option = [0, 1, 2, 3]
-        if time.time() - start_time_eeg > 1.4 and player_speed == 0:
+        """
+        Section to process direction prediction with the EEG.
+        """
+        try:
+            next_direction = desired_directions_map[len(player_level_turns) - failed_movements]
+        except IndexError:
+            next_direction = 5 # end, when there is no other direction pending
+        if game_mode != 'multiplayer' and 'calibration' not in game_mode and next_direction in automatic_movement_classes and any(player_turns_allowed[i] for i in automatic_movement_classes) and time_to_corner > 10:
+            player_direction_command = next_direction
+            time_to_corner = 0
+            player_level_turns.append(player_direction_command)
+            player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
+        elif time.time() - start_time_eeg > 1.4 and player_speed == 0:
             eeg, t_eeg = eeg_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
             if eeg:
                 if game_mode == 'calibration2':  # This is the movement decider. Not by keys and not by EEG
@@ -523,22 +534,25 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                         prediction_movement = toggle_direction(player_direction_command)
                 elif game_mode == 'calibration3':
                     prediction_movement = desired_directions_map[len(player_level_turns)-failed_movements]
+                elif game_mode == 'free singleplayer' and process_mode and len(player_level_turns)!=0: # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
+                    prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed)
+                    channel.play(sound_thud)
                 elif process_mode and len(player_level_turns)!=0: # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
                     eeg_prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed)
-                    print(desired_directions_map)
-                    print(desired_directions_map[len(player_level_turns)-failed_movements])
-                    if eeg_prediction_movement == desired_directions_map[len(player_level_turns)-failed_movements] or len(set(player_level_turns[-10:])) == 1: # If it fails more than 10 times, let the user move on.
-                        prediction_movement = desired_directions_map[len(player_level_turns)-failed_movements]
+                    next_direction = desired_directions_map[len(player_level_turns)-failed_movements]
+                    if eeg_prediction_movement == next_direction or len(set(player_level_turns[-10:])) == 1: # If it fails more than 10 times, let the user move on.
+                        prediction_movement = next_direction
                     else:
                         prediction_movement = player_level_turns[-1]
                         failed_movements+=1
                         level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
-                        time_to_corner = 0
+                        channel.play(sound_thud)
                 else:
                     allowed_movement_random = [x for x, flag in zip(movement_option, player_turns_allowed) if
                                                  flag]
                     prediction_movement = allowed_movement_random[
                         random.randint(0, len(allowed_movement_random) - 1)]  # exclusive range
+                    time_to_corner = 0
 
                 player_eeg_data['time'].append(eeg)
                 if game_mode == 'calibration2':
@@ -547,7 +561,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                     player_eeg_data['class'].append(prediction_movement)
                 player_eeg_data['game index'].append(len(player_total_game_turns))
                 player_eeg_data['movement index'].append(len(player_level_turns))
-                print(f'Classifier returned: {prediction_movement}')
+                print(f'Decided movement: {prediction_movement}')
 
                 player_direction_command = prediction_movement
                 player_level_turns.append(player_direction_command)
