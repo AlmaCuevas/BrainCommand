@@ -7,12 +7,13 @@ from processing_eeg_methods.data_utils import data_normalization
 from BrainCommand_classification import BrainCommand_train, BrainCommand_test
 from board_execution import multiplayer_execution_boards, multiplayer_player_1_start_execution_positions, multiplayer_player_2_start_execution_positions, singleplayer_start_execution_positions, singleplayer_execution_boards, calibration_player_1_start_execution_positions, calibration_execution_boards
 from board_execution_closed_map import closed_map_boards, closed_map_player_1_positions, closed_map_player_2_positions, desired_directions
-from board_execution_short_maps import short_map_boards, short_map_positions, short_map_directions, execution_short_map_boards, execution_short_map_positions, execution_short_map_directions
+from board_execution_short_maps import short_map_boards, short_map_positions, short_map_directions
 import pygame
 import math
 import time
 import pylsl
 import numpy as np
+import joblib
 import pandas as pd
 from scipy import signal
 
@@ -35,9 +36,8 @@ def flat_a_list(list_to_flat: list):
 
 def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: bool = False, process_mode: bool = True): # Process mode will train after a calibration and test during an execution
     fs: int = 250 # Unicorn Hybrid Black
-    calibration_style: str = "only_blue" # or "green_blue" . "green_blue" doesn't make sense with the closed-map: calibration 2.
-    automatic_movement_classes: list = [2, 3] # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
-    movement_option = [0, 1] # The two words that the person can choose
+    calibration_style = "only_blue" # or "green_blue" . "green_blue" doesn't make sense with the closed-map: calibration 2.
+
 
     player1_eeg_data: dict = {'time': [], 'class':[], 'movement index':[0], 'game index':[]} # [0] for init only, I delete it in the saving
     player1_subject_id = int(player1_subject_id)
@@ -59,9 +59,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
         execution_boards = short_map_boards
     elif game_mode == 'singleplayer':
-        player_1_start_execution_positions = execution_short_map_positions
+        player_1_start_execution_positions = short_map_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
-        execution_boards = execution_short_map_boards
+        execution_boards = short_map_boards
     elif game_mode=='free singleplayer':
         player_1_start_execution_positions = singleplayer_start_execution_positions
         player_2_start_execution_positions = multiplayer_player_2_start_execution_positions # It doesn't matter
@@ -117,8 +117,6 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     timer = pygame.time.Clock()
     fps = 60  # This decides how fast the game goes.
     font = pygame.font.Font("assets/RetroFont.ttf", 30)
-    large_font = pygame.font.Font("assets/RetroFont.ttf", 50)
-    small_font = pygame.font.Font("assets/RetroFont.ttf", 20)
     color = "white"
     PI = math.pi
     total_game_time: list = []
@@ -206,11 +204,8 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
         desired_directions_map=desired_directions[current_level]
         desired_direction_player_1 = desired_directions_map[0]
         desired_direction_player_2 = desired_directions_map[1]
-    elif game_mode=='calibration3':
+    elif game_mode=='calibration3' or game_mode=='singleplayer':
         desired_directions_map=short_map_directions[current_level]
-    elif game_mode=='singleplayer':
-        desired_directions_map = execution_short_map_directions[current_level]
-
 
 
     def reset_game(current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2):
@@ -233,10 +228,8 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                 desired_directions_map = desired_directions[current_level]
                 desired_direction_player_1 = desired_directions_map[0]
                 desired_direction_player_2 = desired_directions_map[1]
-            elif game_mode == 'calibration3':
+            elif game_mode == 'calibration3' or game_mode == 'singleplayer':
                 desired_directions_map = short_map_directions[current_level]
-            elif game_mode=='singleplayer':
-                desired_directions_map = execution_short_map_directions[current_level]
             if game_mode == 'multiplayer' or game_mode == 'calibration2':
                 start_2 = player_2_start_execution_positions[current_level]
                 player_2_direction = start_2[2]
@@ -273,12 +266,11 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
 
     def draw_misc(player_num: int, game_mode: str, misc_color: str):
         level_done = font.render("¡Nivel Completado!", True, "lightgrey")
-        press_space_to_continue = small_font.render("[Press space to continue]", True, "lightgrey")
         if game_mode == 'multiplayer':
             congrats_winner_str = f"¡Felicidades jugador {player_num}!"
         else:
             congrats_winner_str = "¡Felicidades!"
-        congrats_winner = large_font.render(congrats_winner_str, True, "lightgrey")
+        congrats_winner = font.render(congrats_winner_str, True, "lightgrey")
         if game_over:
             pygame.draw.rect(screen, "lightgrey", [WIDTH * .05, HEIGHT * .1, WIDTH * .9, HEIGHT * .8], 0, 10)
             pygame.draw.rect(screen, misc_color, [WIDTH * .1, HEIGHT * .2, WIDTH * .8, HEIGHT * .6], 0, 10)
@@ -287,11 +279,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             screen.blit(thanks_for_participating,
                         (WIDTH / 2 - thanks_for_participating.get_width() / 2, HEIGHT / 2 - thanks_for_participating.get_height() / 2 + 100))
             screen.blit(congrats_winner,
-                            (WIDTH / 2 - congrats_winner.get_width() / 2, HEIGHT / 2 - congrats_winner.get_height() / 2 - 150))
+                            (WIDTH / 2 - congrats_winner.get_width() / 2, HEIGHT / 2 - congrats_winner.get_height() / 2 - 100))
             screen.blit(level_done,
                         (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2))
-            screen.blit(press_space_to_continue,
-                        (WIDTH / 2 - press_space_to_continue.get_width() / 2, HEIGHT / 2 - press_space_to_continue.get_height() / 2 + 200))
         elif game_won:
             pygame.draw.rect(screen, "lightgrey", [WIDTH * .05, HEIGHT * .1, WIDTH * .9, HEIGHT * .8], 0, 10)
             pygame.draw.rect(screen, misc_color, [WIDTH * .1, HEIGHT * .2, WIDTH * .8, HEIGHT * .6], 0, 10)
@@ -299,11 +289,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             screen.blit(prepare_for_next_level,
                         (WIDTH / 2 - prepare_for_next_level.get_width() / 2, HEIGHT / 2 - prepare_for_next_level.get_height() / 2 + 100))
             screen.blit(congrats_winner,
-                            (WIDTH / 2 - congrats_winner.get_width() / 2, HEIGHT / 2 - congrats_winner.get_height() / 2 - 150))
+                            (WIDTH / 2 - congrats_winner.get_width() / 2, HEIGHT / 2 - congrats_winner.get_height() / 2 - 100))
             screen.blit(level_done,
                         (WIDTH / 2 - level_done.get_width() / 2, HEIGHT / 2 - level_done.get_height() / 2))
-            screen.blit(press_space_to_continue,
-                        (WIDTH / 2 - press_space_to_continue.get_width() / 2, HEIGHT / 2 - press_space_to_continue.get_height() / 2 + 200))
 
 
     def check_collisions(last_activate_turn_tile:list, player_speed:int, time_to_corner:int, turns_allowed, direction:int, center_x:int,
@@ -509,19 +497,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             valid_array)  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
 
     def decision_maker(eeg_in, player_total_game_turns, desired_direction: int, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], processing_function, desired_directions_map: list=[], failed_movements: int = 0, level: list=[], last_activate_turn_tile: list=[], time_to_corner: int =0):
-        """
-        Section to process direction prediction with the EEG.
-        """
-        try:
-            next_direction = desired_directions_map[len(player_level_turns) - failed_movements]
-        except IndexError:
-            next_direction = 5 # end, when there is no other direction pending
-        if game_mode != 'multiplayer' and 'calibration' not in game_mode and next_direction in automatic_movement_classes and any(player_turns_allowed[i] for i in automatic_movement_classes) and time_to_corner > 10:
-            player_direction_command = next_direction
-            time_to_corner = 0
-            player_level_turns.append(player_direction_command)
-            player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
-        elif time.time() - start_time_eeg > 1.4 and player_speed == 0:
+        ## Section to process direction prediction with the EEG.
+        movement_option = [0, 1, 2, 3]
+        if time.time() - start_time_eeg > 1.4 and player_speed == 0:
             eeg, t_eeg = eeg_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
             if eeg:
                 if game_mode == 'calibration2':  # This is the movement decider. Not by keys and not by EEG
@@ -534,25 +512,22 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                         prediction_movement = toggle_direction(player_direction_command)
                 elif game_mode == 'calibration3':
                     prediction_movement = desired_directions_map[len(player_level_turns)-failed_movements]
-                elif game_mode == 'free singleplayer' and process_mode and len(player_level_turns)!=0: # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
-                    prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed)
-                    channel.play(sound_thud)
                 elif process_mode and len(player_level_turns)!=0: # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
                     eeg_prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed)
-                    next_direction = desired_directions_map[len(player_level_turns)-failed_movements]
-                    if eeg_prediction_movement == next_direction or len(set(player_level_turns[-10:])) == 1: # If it fails more than 10 times, let the user move on.
-                        prediction_movement = next_direction
+                    print(desired_directions_map)
+                    print(desired_directions_map[len(player_level_turns)-failed_movements])
+                    if eeg_prediction_movement == desired_directions_map[len(player_level_turns)-failed_movements] or len(set(player_level_turns[-10:])) == 1: # If it fails more than 10 times, let the user move on.
+                        prediction_movement = desired_directions_map[len(player_level_turns)-failed_movements]
                     else:
                         prediction_movement = player_level_turns[-1]
                         failed_movements+=1
                         level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
-                        channel.play(sound_thud)
+                        time_to_corner = 0
                 else:
                     allowed_movement_random = [x for x, flag in zip(movement_option, player_turns_allowed) if
                                                  flag]
                     prediction_movement = allowed_movement_random[
                         random.randint(0, len(allowed_movement_random) - 1)]  # exclusive range
-                    time_to_corner = 0
 
                 player_eeg_data['time'].append(eeg)
                 if game_mode == 'calibration2':
@@ -561,7 +536,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                     player_eeg_data['class'].append(prediction_movement)
                 player_eeg_data['game index'].append(len(player_total_game_turns))
                 player_eeg_data['movement index'].append(len(player_level_turns))
-                print(f'Decided movement: {prediction_movement}')
+                print(f'Classifier returned: {prediction_movement}')
 
                 player_direction_command = prediction_movement
                 player_level_turns.append(player_direction_command)
@@ -755,7 +730,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                     #if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_total_game_turns.append(player_2_level_turns[1:])
                     run = False
                 elif game_won and event.key == pygame.K_SPACE:
-                    current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, game_won, play_won_flag, startup_counter, player_1_speed, player_1_level_turns, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2, desired_directions_map, failed_movements = reset_game(current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2)
+                    current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, game_won, play_won_flag, startup_counter, player_1_speed, player_1_level_turns, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2, desired_directions_map = reset_game(current_level, player_2_direction, player_2_player_x, player_2_player_y, player_2_direction_command, player_1_direction, player_1_player_x, player_1_player_y, player_1_direction_command, player_2_speed, level, player_2_level_turns, cookies_at_the_beginning, desired_direction_player_1, desired_direction_player_2)
             if dev_mode or game_mode == 'calibration1':
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_RIGHT and player_1_direction_command == 0:
@@ -789,10 +764,12 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             pd.DataFrame(player2_eeg_data).to_csv(
                 f'assets/game_saved_files/eeg_data_{game_mode}_sub{player2_subject_id:02d}.csv')
             output_name_txt = f'assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}_and_sub_{player2_subject_id:02d}.txt'
-
+        rannum=random.randint(0, 9999)
+        game_id = f"{ranmum:04}"
         file = open(output_name_txt, 'w')
-        file.write(f'player_1_ID, {player1_subject_id}\n')
-        file.write(f'player_2_ID, {player2_subject_id}\n')
+        file.write(f'game_id, {game_id}\n')
+        file.write(f'player1_id, {player1_subject_id}\n')
+        file.write(f'player2_id, {player2_subject_id}\n')
         file.write(f'game_mode, {game_mode}\n')
         file.write(f'total_game_time, {total_game_time}\n')
         file.write(f'cookie_winner, {cookie_winner}\n')
