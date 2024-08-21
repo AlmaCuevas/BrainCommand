@@ -2,6 +2,7 @@ from processing_eeg_methods.classifiers_classes import selected_transformers_fun
 from processing_eeg_methods.data_loaders import braincommand_dataset_loader
 from processing_eeg_methods.data_utils import convert_into_independent_channels
 import numpy as np
+import os
 
 dataset_info = {  # BrainCommand
                     'dataset_name': 'BrainCommand',
@@ -17,7 +18,8 @@ dataset_info = {  # BrainCommand
 
 
 def BrainCommand_train(game_mode: str, subject_id: int) -> None:
-    data, labels = braincommand_dataset_loader(game_mode, subject_id)
+    filepath: str = 'assets/game_saved_files'
+    data, labels, _ = braincommand_dataset_loader(filepath=filepath, subject_id=subject_id, game_mode=game_mode)
 
     processing_function = selected_transformers_function()
 
@@ -27,9 +29,11 @@ def BrainCommand_train(game_mode: str, subject_id: int) -> None:
     data_train = np.transpose(np.array([data_train]), (1, 0, 2))
 
     processing_function.train(data_train, labels_train, dataset_info)
+    saving_folder: str = f'./assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}'
+    os.makedirs(saving_folder, exist_ok=True)
 
     processing_function.save(
-        f'assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}'
+        saving_folder
     )
 
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
@@ -53,7 +57,7 @@ def BrainCommand_test(data, processing_function: ProcessingMethod):
 
 
 if __name__ == "__main__":
-    subject_id = 1
+    subject_id = 25
     game_mode = 'calibration3'
 
     BrainCommand_train(game_mode, subject_id)
