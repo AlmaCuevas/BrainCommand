@@ -1,10 +1,11 @@
 import copy
 import random
 
-from processing_eeg_methods.classifiers_classes import ProcessingMethod, selected_transformers_function
+from processing_eeg_methods.data_dataclass import ProcessingMethods
 from processing_eeg_methods.data_utils import data_normalization
 
 from BrainCommand_classification import BrainCommand_train, BrainCommand_test
+from plot_current_trial import check_eeg
 from board_execution import multiplayer_execution_boards, multiplayer_player_1_start_execution_positions, multiplayer_player_2_start_execution_positions, singleplayer_start_execution_positions, singleplayer_execution_boards, calibration_player_1_start_execution_positions, calibration_execution_boards
 from board_execution_closed_map import closed_map_boards, closed_map_player_1_positions, closed_map_player_2_positions, desired_directions
 from board_execution_short_maps import short_map_boards, short_map_positions, short_map_directions, execution_short_map_boards, execution_short_map_positions, execution_short_map_directions
@@ -25,6 +26,18 @@ def lsl_inlet(name:str, number_subject: int = 1):
     inlet = pylsl.stream_inlet(info[0], recover=False)
     print(f'Brain Command has received the {info[0].type()} inlet: {name}, for Player {number_subject}.')
     return inlet
+
+def get_samples_from_certain_timestamp(eeg_in, start_timestamp, end_timestamp):
+    data = []
+    timestamps = []
+    while True:
+        sample, timestamp = eeg_in.pull_sample()
+        if start_timestamp <= timestamp <= end_timestamp:
+            data.append(sample)
+            timestamps.append(timestamp)
+        if timestamp > end_timestamp:
+            break
+    return data, timestamps
 
 def flat_a_list(list_to_flat: list):
     return [
@@ -82,17 +95,43 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
     if process_mode and not dev_mode:
         if 'singleplayer' in game_mode or game_mode == 'multiplayer':
             print("loaded processing_function 1")
-            processing_function_1 = selected_transformers_function().load(
+            processing_function_1 = ProcessingMethods()
+            processing_function_1.activate_methods(
+                spatial_features=True,  # Training is over-fitted. Training accuracy >90
+                simplified_spatial_features=False,
+                # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
+                ShallowFBCSPNet=False,
+                LSTM=False,  # Training is over-fitted. Training accuracy >90
+                GRU=False,  # Training is over-fitted. Training accuracy >90
+                diffE=False,  # It doesn't work if you only use one channel in the data
+                feature_extraction=True,
+                number_of_classes=len(movement_option),
+            )
+            processing_function_1.load_models(
             f'assets/classifier_data/classifier_{processing_function_loading_game_mode}_sub{player1_subject_id:02d}'
-        )
+            )
         if game_mode == 'multiplayer':
             print("loaded processing_function 2")
-            processing_function_2 = selected_transformers_function().load(
+            processing_function_2 = ProcessingMethods()
+            processing_function_2.activate_methods(
+                spatial_features=True,  # Training is over-fitted. Training accuracy >90
+                simplified_spatial_features=False,
+                # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
+                ShallowFBCSPNet=False,
+                LSTM=False,  # Training is over-fitted. Training accuracy >90
+                GRU=False,  # Training is over-fitted. Training accuracy >90
+                diffE=False,  # It doesn't work if you only use one channel in the data
+                feature_extraction=True,
+                number_of_classes=len(movement_option),
+            )
+            processing_function_2.load_models(
             f'assets/classifier_data/classifier_{processing_function_loading_game_mode}_sub{player2_subject_id:02d}'
         )
     if not dev_mode:
+        player1_start_mrk_time = 0
         eeg_1_in = lsl_inlet('player', 1)  # Don't use special characters or uppercase for the name
         if game_mode == 'multiplayer' or game_mode == 'calibration2':
+            player2_start_mrk_time = 0
             eeg_2_in = lsl_inlet('player', 2)  # Don't use special characters or uppercase for the name
 
     # GAME
@@ -306,7 +345,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                         (WIDTH / 2 - press_space_to_continue.get_width() / 2, HEIGHT / 2 - press_space_to_continue.get_height() / 2 + 200))
 
 
-    def check_collisions(last_activate_turn_tile:list, player_speed:int, time_to_corner:int, turns_allowed, direction:int, center_x:int,
+    def check_collisions(start_mrk_time, last_activate_turn_tile:list, player_speed:int, time_to_corner:int, turns_allowed, direction:int, center_x:int,
                          center_y:int, level:list, player_num:int, start_player_time, calibration_moving_flag: bool = True):
         cookie_winner_num = 0
         if player_num == 2: # Change values in case you want to control volume per ear
@@ -324,8 +363,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             level[center_y // yscale][center_x // xscale] = 0
         if sum(corner_check) >= 2 or corner_check == turns_allowed:
             if level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] != -1 * player_num and time_to_corner > 10:
-                channel.play(sound_thud)
+                #channel.play(sound_thud)
                 start_player_time = time.time()
+                start_mrk_time = pylsl.local_clock()
                 channel.set_volume(right_volume, left_volume)
                 level[center_y // yscale][center_x // xscale] = -1 * player_num
                 last_activate_turn_tile = [center_y // yscale, center_x // xscale]
@@ -336,7 +376,7 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
             level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
             player_speed = original_speed
             time_to_corner = 0
-        return last_activate_turn_tile, player_speed, time_to_corner, level, cookie_winner_num, start_player_time
+        return start_mrk_time, last_activate_turn_tile, player_speed, time_to_corner, level, cookie_winner_num, start_player_time
 
     def draw_player(direction:int, last_direction:int, player_x:float, player_y:float, player_images, moving_flag: bool = True):
         # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
@@ -495,35 +535,41 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                     )
         return level
 
-    def eeg_cleaning_to_prediction(eeg, processing_function: ProcessingMethod, player_turns_allowed) -> int:
+    def eeg_cleaning_to_prediction(eeg, processing_function: ProcessingMethods, player_turns_allowed, subject_id: int) -> int:
         x_array = np.array([eeg])
         x_array = x_array[:, :,
                   :-9]  # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
         x_array = np.transpose(x_array, (0, 2, 1))
         x_array = signal.detrend(x_array)
         x_array = data_normalization(x_array)
-        probs_array = BrainCommand_test(x_array, processing_function)[0]
+        probs_array = BrainCommand_test(x_array, subject_id, processing_function)[0]
         valid_array = [0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)]
         print(valid_array)
         return np.argmax(
             valid_array)  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
 
-    def decision_maker(eeg_in, player_total_game_turns, desired_direction: int, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], processing_function, desired_directions_map: list=[], failed_movements: int = 0, level: list=[], last_activate_turn_tile: list=[], time_to_corner: int =0):
+    def decision_maker(start_mrk_time, eeg_in, player_total_game_turns, desired_direction: int, player_speed: int, start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict, player_direction_command: int, player_level_turns: list[int], processing_function, subject_id, desired_directions_map: list=[], failed_movements: int = 0, level: list=[], last_activate_turn_tile: list=[], time_to_corner: int =0):
         """
         Section to process direction prediction with the EEG.
         """
         try:
             next_direction = desired_directions_map[len(player_level_turns) - failed_movements]
         except IndexError:
-            next_direction = 5 # end, when there is no other direction pending
-        if game_mode != 'multiplayer' and next_direction in automatic_movement_classes and any(player_turns_allowed[i] for i in automatic_movement_classes) and time_to_corner > 10:
+            next_direction = 99 # end, when there is no other direction pending
+        if game_mode == 'singleplayer' and next_direction in automatic_movement_classes and any(player_turns_allowed[i] for i in automatic_movement_classes) and time_to_corner > 10:
             player_direction_command = next_direction
             time_to_corner = 0
             player_level_turns.append(player_direction_command)
             player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
         elif time.time() - start_time_eeg > 1.4 and player_speed == 0:
-            eeg, t_eeg = eeg_in.pull_chunk(timeout=0, max_samples=int(1.4 * fs))  # 1.4 seconds by Fs
+            channel.play(sound_thud)
+            end_mrk_time = pylsl.local_clock()
+            eeg, t_eeg = get_samples_from_certain_timestamp(eeg_in, start_mrk_time, end_mrk_time)
             if eeg:
+                print(len(eeg))
+                if len(player_level_turns)!=0:
+                    if not process_mode:
+                        check_eeg(eeg, t_eeg, start_mrk_time, end_mrk_time)
                 if game_mode == 'calibration2':  # This is the movement decider. Not by keys and not by EEG
                     remainder_to_record = minimum_total_trials_per_movement - player_eeg_data['class'].count(desired_direction) # From total class, how many of current type do I need?
                     if remainder_to_record < 3:
@@ -535,10 +581,9 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
                 elif game_mode == 'calibration3':
                     prediction_movement = desired_directions_map[len(player_level_turns)-failed_movements]
                 elif game_mode == 'free singleplayer' and process_mode and len(player_level_turns)!=0: # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
-                    prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed)
-                    channel.play(sound_thud)
+                    prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed, subject_id=subject_id)
                 elif process_mode and len(player_level_turns)!=0: # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
-                    eeg_prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed)
+                    eeg_prediction_movement = eeg_cleaning_to_prediction(eeg, processing_function=processing_function, player_turns_allowed=player_turns_allowed, subject_id=subject_id)
                     next_direction = desired_directions_map[len(player_level_turns)-failed_movements]
                     if eeg_prediction_movement == next_direction or len(set(player_level_turns[-10:])) == 1: # If it fails more than 10 times, let the user move on.
                         prediction_movement = next_direction
@@ -658,19 +703,25 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
 
             if not dev_mode and game_mode!='calibration1':
                 player_1_speed, player_1_direction_command, player_1_level_turns, player1_eeg_data, failed_movements, level, player_1_time_to_corner = decision_maker(
-                    eeg_1_in, player_1_total_game_turns, desired_direction_player_1, player_1_speed, start_time_eeg_1, player_1_turns_allowed, player1_eeg_data,
-                    player_1_direction_command, player_1_level_turns, processing_function_1, desired_directions_map, failed_movements, level, player_1_last_activate_turn_tile, player_1_time_to_corner)
+                    player1_start_mrk_time, eeg_1_in, player_1_total_game_turns, desired_direction_player_1, player_1_speed, start_time_eeg_1, player_1_turns_allowed, player1_eeg_data,
+                    player_1_direction_command, player_1_level_turns, processing_function_1, player1_subject_id, desired_directions_map, failed_movements, level, player_1_last_activate_turn_tile, player_1_time_to_corner)
                 if game_mode == 'multiplayer' or game_mode == 'calibration2':
                     player_2_speed, player_2_direction_command, player_2_level_turns, player2_eeg_data, _, _, _ = decision_maker(
                         eeg_2_in, player_2_total_game_turns, desired_direction_player_2, player_2_speed, start_time_eeg_2, player_2_turns_allowed, player2_eeg_data,
-                        player_2_direction_command, player_2_level_turns, processing_function_2)
+                        player_2_direction_command, player_2_level_turns, processing_function_2, player2_subject_id)
 
             if moving_flag_1:
                 player_1_player_x, player_1_player_y = move_player(player_1_direction, player_1_turns_allowed, player_1_player_x, player_1_player_y, player_1_speed)
             if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_player_x, player_2_player_y = move_player(player_2_direction, player_2_turns_allowed, player_2_player_x, player_2_player_y, player_2_speed)
 
-            player_1_last_activate_turn_tile, player_1_speed, player_1_time_to_corner, level, cookie_winner_1_num, start_time_eeg_1 = check_collisions(player_1_last_activate_turn_tile, player_1_speed, player_1_time_to_corner, player_1_turns_allowed, player_1_direction, player_1_center_x, player_1_center_y, level, 1, start_time_eeg_1, moving_flag_1)
-            if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_last_activate_turn_tile, player_2_speed, player_2_time_to_corner, level, cookie_winner_2_num, start_time_eeg_2 = check_collisions(player_2_last_activate_turn_tile, player_2_speed, player_2_time_to_corner, player_2_turns_allowed, player_2_direction, player_2_center_x, player_2_center_y, level, 2, start_time_eeg_2)
+            player1_start_mrk_time, player_1_last_activate_turn_tile, player_1_speed, player_1_time_to_corner, level, cookie_winner_1_num, start_time_eeg_1 = check_collisions(
+                player1_start_mrk_time, player_1_last_activate_turn_tile, player_1_speed, player_1_time_to_corner,
+                player_1_turns_allowed, player_1_direction, player_1_center_x, player_1_center_y, level, 1,
+                start_time_eeg_1, moving_flag_1)
+            if game_mode == 'multiplayer' or game_mode == 'calibration2': player2_start_mrk_time, player_2_last_activate_turn_tile, player_2_speed, player_2_time_to_corner, level, cookie_winner_2_num, start_time_eeg_2 = check_collisions(
+                player2_start_mrk_time, player_2_last_activate_turn_tile, player_2_speed, player_2_time_to_corner,
+                player_2_turns_allowed, player_2_direction, player_2_center_x, player_2_center_y, level, 2,
+                start_time_eeg_2)
 
 
             ## Section to decide if the game is finished.
@@ -802,8 +853,8 @@ def play_game(game_mode: str, player1_subject_id, player2_subject_id, dev_mode: 
 
         if process_mode: # If a calibration mode was run, then train the classifier for the next round
             if 'calibration' in game_mode:
-                BrainCommand_train(game_mode, player1_subject_id)
+                BrainCommand_train(game_mode, player1_subject_id, selected_classes=movement_option)
             #if game_mode == 'calibration2':
-            #    BrainCommand_train(game_mode, player2_subject_id)
+            #    BrainCommand_train(game_mode, player2_subject_id, selected_classes=movement_option)
 
     print("Congrats! Game finished :D")

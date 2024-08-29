@@ -1,4 +1,4 @@
 pygame==2.5.2
 pylsl==1.16.2
-EEG-Classifiers-Ensemble>=0.1.1,<0.2.0
+EEG-Classifiers-Ensemble>=0.1.4,<0.2.0
 bsl==0.6.4
