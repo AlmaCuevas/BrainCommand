@@ -7,17 +7,17 @@ from BrainCommand_classification import BrainCommand_train, BrainCommand_test
 # from plot_current_trial import check_eeg
 from board_execution import (
     multiplayer_execution_boards,
-    multiplayer_player_1_start_execution_positions,
-    multiplayer_player_2_start_execution_positions,
+    multiplayer_player1_start_execution_positions,
+    multiplayer_player2_start_execution_positions,
     singleplayer_start_execution_positions,
     singleplayer_execution_boards,
-    calibration_player_1_start_execution_positions,
+    calibration_player1_start_execution_positions,
     calibration_execution_boards,
 )
 from board_execution_closed_map import (
     closed_map_boards,
-    closed_map_player_1_positions,
-    closed_map_player_2_positions,
+    closed_map_player1_positions,
+    closed_map_player2_positions,
     desired_directions,
 )
 from board_execution_short_maps import (
@@ -60,6 +60,15 @@ def get_samples_from_certain_timestamp(eeg_in, start_timestamp, end_timestamp):
             timestamps.append(timestamp)
         if timestamp > end_timestamp:
             break
+        try:
+            print(f"inicio del primer sample disponible: {timestamps[0]}, marker start: {start_timestamp}")
+            print(f"fin del primer sample disponible: {timestamps[-1]}, marker end: {end_timestamp}")
+            print(len(timestamps))
+        except:
+            print("it failed")
+        # todo: check on solo, because its always less than 325, my theory is that the start_timestamp is way more than the first one available.
+        # TODO: Is it because the first timestamp is earlier than the previous end_timestamp (overlapping)?
+        # todo: or is it because the lsl gets lost after a while?
     return data, timestamps
 
 
@@ -100,41 +109,41 @@ def play_game(
     )  # It becomes str during the main menu parsing
 
     if game_mode == "calibration1":  # Maze
-        player_1_start_execution_positions = (
-            calibration_player_1_start_execution_positions
+        player1_start_execution_positions = (
+            calibration_player1_start_execution_positions
         )
-        player_2_start_execution_positions = (
-            multiplayer_player_2_start_execution_positions  # It doesn't matter
+        player2_start_execution_positions = (
+            multiplayer_player2_start_execution_positions  # It doesn't matter
         )
         execution_boards = calibration_execution_boards
     elif game_mode == "calibration2":  # closed-map
-        player_1_start_execution_positions = closed_map_player_1_positions
-        player_2_start_execution_positions = closed_map_player_2_positions
+        player1_start_execution_positions = closed_map_player1_positions
+        player2_start_execution_positions = closed_map_player2_positions
         execution_boards = closed_map_boards
     elif game_mode == "calibration3":  # short map (small mazes)
-        player_1_start_execution_positions = short_map_positions
-        player_2_start_execution_positions = (
-            multiplayer_player_2_start_execution_positions  # It doesn't matter
+        player1_start_execution_positions = short_map_positions
+        player2_start_execution_positions = (
+            multiplayer_player2_start_execution_positions  # It doesn't matter
         )
         execution_boards = short_map_boards
     elif game_mode == "singleplayer":
-        player_1_start_execution_positions = execution_short_map_positions
-        player_2_start_execution_positions = (
-            multiplayer_player_2_start_execution_positions  # It doesn't matter
+        player1_start_execution_positions = execution_short_map_positions
+        player2_start_execution_positions = (
+            multiplayer_player2_start_execution_positions  # It doesn't matter
         )
         execution_boards = execution_short_map_boards
     elif game_mode == "free singleplayer":
-        player_1_start_execution_positions = singleplayer_start_execution_positions
-        player_2_start_execution_positions = (
-            multiplayer_player_2_start_execution_positions  # It doesn't matter
+        player1_start_execution_positions = singleplayer_start_execution_positions
+        player2_start_execution_positions = (
+            multiplayer_player2_start_execution_positions  # It doesn't matter
         )
         execution_boards = singleplayer_execution_boards
     else:  # game_mode == 'multiplayer'
-        player_1_start_execution_positions = (
-            multiplayer_player_1_start_execution_positions
+        player1_start_execution_positions = (
+            multiplayer_player1_start_execution_positions
         )
-        player_2_start_execution_positions = (
-            multiplayer_player_2_start_execution_positions
+        player2_start_execution_positions = (
+            multiplayer_player2_start_execution_positions
         )
         execution_boards = multiplayer_execution_boards
 
@@ -149,13 +158,13 @@ def play_game(
     player1_end_mrk_time = 0
     player2_end_mrk_time = 0
 
-    processing_function_1 = None
-    processing_function_2 = None
+    player1_processing_function = None
+    player2_processing_function = None
     if process_mode and not dev_mode:
         if "singleplayer" in game_mode or game_mode == "multiplayer":
             print("loaded processing_function 1")
-            processing_function_1 = ProcessingMethods()
-            processing_function_1.activate_methods(
+            player1_processing_function = ProcessingMethods()
+            player1_processing_function.activate_methods(
                 spatial_features=True,  # Training is over-fitted. Training accuracy >90
                 simplified_spatial_features=False,
                 # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
@@ -166,13 +175,13 @@ def play_game(
                 feature_extraction=True,
                 number_of_classes=len(movement_option),
             )
-            processing_function_1.load_models(
+            player1_processing_function.load_models(
                 f"assets/classifier_data/classifier_{processing_function_loading_game_mode}_sub{player1_subject_id:02d}"
             )
         if game_mode == "multiplayer":
             print("loaded processing_function 2")
-            processing_function_2 = ProcessingMethods()
-            processing_function_2.activate_methods(
+            player2_processing_function = ProcessingMethods()
+            player2_processing_function.activate_methods(
                 spatial_features=True,  # Training is over-fitted. Training accuracy >90
                 simplified_spatial_features=False,
                 # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
@@ -183,17 +192,17 @@ def play_game(
                 feature_extraction=True,
                 number_of_classes=len(movement_option),
             )
-            processing_function_2.load_models(
+            player2_processing_function.load_models(
                 f"assets/classifier_data/classifier_{processing_function_loading_game_mode}_sub{player2_subject_id:02d}"
             )
     if not dev_mode:
         player1_start_mrk_time = 0
-        eeg_1_in = lsl_inlet(
+        player1_eeg_in = lsl_inlet(
             "player", 1
         )  # Don't use special characters or uppercase for the name
         if game_mode == "multiplayer" or game_mode == "calibration2":
             player2_start_mrk_time = 0
-            eeg_2_in = lsl_inlet(
+            player2_eeg_in = lsl_inlet(
                 "player", 2
             )  # Don't use special characters or uppercase for the name
 
@@ -224,15 +233,15 @@ def play_game(
     color = "white"
     PI = math.pi
     total_game_time: list = []
-    player_1_total_game_turns: list = []
-    player_1_level_turns: list[int] = []
+    player1_total_game_turns: list = []
+    player1_level_turns: list[int] = []
 
     ## All Player 2
-    player_2_total_game_turns: list = []
-    player_2_level_turns: list[int] = []
+    player2_total_game_turns: list = []
+    player2_level_turns: list[int] = []
 
     ## Images import
-    player_2_images: list = [
+    player2_images: list = [
         pygame.transform.scale(
             pygame.image.load("assets/extras_images/right_2.png"),
             (xscale * 2, yscale * 2),
@@ -251,18 +260,18 @@ def play_game(
         ),
     ]
 
-    start_2: list = player_2_start_execution_positions[current_level]
-    player_2_player_x: int = int(start_2[0] * xscale)
-    player_2_player_y: int = int(start_2[1] * yscale)
-    player_2_direction: int = start_2[2]
-    player_2_last_direction: int = start_2[2]
-    player_2_direction_command: int = start_2[2]
-    player_2_last_activate_turn_tile: list[int] = [4, 4]
-    player_2_time_to_corner: int = 0
+    start_2: list = player2_start_execution_positions[current_level]
+    player2_player_x: int = int(start_2[0] * xscale)
+    player2_player_y: int = int(start_2[1] * yscale)
+    player2_direction: int = start_2[2]
+    player2_last_direction: int = start_2[2]
+    player2_direction_command: int = start_2[2]
+    player2_last_activate_turn_tile: list[int] = [4, 4]
+    player2_time_to_corner: int = 0
     corner_color = "blue"
 
     ## Images import
-    player_1_images: list = [
+    player1_images: list = [
         pygame.transform.scale(
             pygame.image.load("assets/extras_images/right_1.png"),
             (xscale * 2, yscale * 2),
@@ -295,23 +304,23 @@ def play_game(
     channel = pygame.mixer.Channel(0)
 
     ## Positions
-    start_1: list = player_1_start_execution_positions[current_level]
-    player_1_player_x: int = int(start_1[0] * xscale)
-    player_1_player_y: int = int(start_1[1] * yscale)
-    player_1_direction: int = start_1[2]
-    player_1_last_direction: int = start_1[2]
-    player_1_turns_allowed: list[bool] = [False, False, False, False]
+    player1_start: list = player1_start_execution_positions[current_level]
+    player1_player_x: int = int(player1_start[0] * xscale)
+    player1_player_y: int = int(player1_start[1] * yscale)
+    player1_direction: int = player1_start[2]
+    player1_last_direction: int = player1_start[2]
+    player1_turns_allowed: list[bool] = [False, False, False, False]
 
     ## Other
-    player_1_direction_command: int = start_1[2]
+    player1_direction_command: int = player1_start[2]
     if dev_mode:
-        player_1_speed: int = 5
+        player1_speed: int = 5
         original_speed: int = 5
-        player_2_speed: int = 5
+        player2_speed: int = 5
     else:
-        player_1_speed: int = 15
+        player1_speed: int = 15
         original_speed: int = 15
-        player_2_speed: int = 15
+        player2_speed: int = 15
 
     failed_movements = 0
     minimum_total_trials_per_movement = 20
@@ -320,25 +329,25 @@ def play_game(
     game_over: bool = False
     game_won: bool = False
     play_won_flag: bool = True
-    player_1_last_activate_turn_tile: list[int] = [
+    player1_last_activate_turn_tile: list[int] = [
         4,
         4,
     ]  # Check that in all levels this is a 0 pixel
-    player_1_time_to_corner: int = 0
+    player1_time_to_corner: int = 0
     cookie_winner: list = []
     cookie_winner_2_num: int = 0
-    moving_flag_1: bool = True
+    player1_moving_flag: bool = True
     player1_start_time_eeg: float = 0
     start_time_eeg_2: float = 0
     misc_color: str = "lightpink4"
 
-    desired_direction_player_1 = 0  # default to avoid missing variable
-    desired_direction_player_2 = 1  # default to avoid missing variable
+    player1_desired_direction_player = 0  # default to avoid missing variable
+    player2_desired_direction_player = 1  # default to avoid missing variable
     desired_directions_map = []  # default to avoid missing variable
     if game_mode == "calibration2":
         desired_directions_map = desired_directions[current_level]
-        desired_direction_player_1 = desired_directions_map[0]
-        desired_direction_player_2 = desired_directions_map[1]
+        player1_desired_direction_player = desired_directions_map[0]
+        player2_desired_direction_player = desired_directions_map[1]
     elif game_mode == "calibration3":
         desired_directions_map = short_map_directions[current_level]
     elif game_mode == "singleplayer":
@@ -346,20 +355,20 @@ def play_game(
 
     def reset_game(
             current_level,
-            player_2_direction,
-            player_2_player_x,
-            player_2_player_y,
-            player_2_direction_command,
-            player_1_direction,
-            player_1_player_x,
-            player_1_player_y,
-            player_1_direction_command,
-            player_2_speed,
+            player2_direction,
+            player2_player_x,
+            player2_player_y,
+            player2_direction_command,
+            player1_direction,
+            player1_player_x,
+            player1_player_y,
+            player1_direction_command,
+            player2_speed,
             level,
-            player_2_level_turns,
+            player2_level_turns,
             cookies_at_the_beginning,
-            desired_direction_player_1,
-            desired_direction_player_2,
+            player1_desired_direction_player,
+            player2_desired_direction_player,
     ):
         play_won_flag = True
         startup_counter = 0
@@ -367,61 +376,61 @@ def play_game(
         failed_movements = 0
         current_level += 1
         if dev_mode:
-            player_1_speed = original_speed
+            player1_speed = original_speed
             if game_mode == "multiplayer" or game_mode == "calibration2":
-                player_2_speed = original_speed
+                player2_speed = original_speed
         else:
-            player_1_speed = original_speed
+            player1_speed = original_speed
             if game_mode == "multiplayer" or game_mode == "calibration2":
-                player_2_speed = original_speed
+                player2_speed = original_speed
         if current_level < len(execution_boards):
             level = copy.deepcopy(execution_boards[current_level])
             cookies_at_the_beginning = flat_a_list(level).count(2)
-            start_1 = player_1_start_execution_positions[current_level]
+            player1_start = player1_start_execution_positions[current_level]
             if game_mode == "calibration2":
                 desired_directions_map = desired_directions[current_level]
-                desired_direction_player_1 = desired_directions_map[0]
-                desired_direction_player_2 = desired_directions_map[1]
+                player1_desired_direction_player = desired_directions_map[0]
+                player2_desired_direction_player = desired_directions_map[1]
             elif game_mode == "calibration3":
                 desired_directions_map = short_map_directions[current_level]
             elif game_mode == "singleplayer":
                 desired_directions_map = execution_short_map_directions[current_level]
             if game_mode == "multiplayer" or game_mode == "calibration2":
-                start_2 = player_2_start_execution_positions[current_level]
-                player_2_direction = start_2[2]
-                player_2_player_x = int(start_2[0] * xscale)
-                player_2_player_y = int(start_2[1] * yscale)
-                player_2_direction_command: int = start_2[2]
-            player_1_direction = start_1[2]
-            player_1_player_x = int(start_1[0] * xscale)
-            player_1_player_y = int(start_1[1] * yscale)
-            player_1_direction_command: int = start_1[2]
+                player2_start = player2_start_execution_positions[current_level]
+                player2_direction = player2_start[2]
+                player2_player_x = int(player2_start[0] * xscale)
+                player2_player_y = int(player2_start[1] * yscale)
+                player2_direction_command: int = player2_start[2]
+            player1_direction = player1_start[2]
+            player1_player_x = int(player1_start[0] * xscale)
+            player1_player_y = int(player1_start[1] * yscale)
+            player1_direction_command: int = player1_start[2]
         game_won = False
-        player_1_level_turns = []
+        player1_level_turns = []
         if game_mode == "multiplayer" or game_mode == "calibration2":
-            player_2_level_turns = []
+            player2_level_turns = []
 
         return (
             current_level,
-            player_2_direction,
-            player_2_player_x,
-            player_2_player_y,
-            player_2_direction_command,
-            player_1_direction,
-            player_1_player_x,
-            player_1_player_y,
-            player_1_direction_command,
+            player2_direction,
+            player2_player_x,
+            player2_player_y,
+            player2_direction_command,
+            player1_direction,
+            player1_player_x,
+            player1_player_y,
+            player1_direction_command,
             game_won,
             play_won_flag,
             startup_counter,
-            player_1_speed,
-            player_1_level_turns,
-            player_2_speed,
+            player1_speed,
+            player1_level_turns,
+            player2_speed,
             level,
-            player_2_level_turns,
+            player2_level_turns,
             cookies_at_the_beginning,
-            desired_direction_player_1,
-            desired_direction_player_2,
+            player1_desired_direction_player,
+            player2_desired_direction_player,
             desired_directions_map,
             failed_movements,
         )
@@ -1018,131 +1027,131 @@ def play_game(
         else:
             moving = True
 
-        player_1_center_x: int = player_1_player_x + xscale // 2
-        player_1_center_y: int = player_1_player_y + yscale // 2
+        player1_center_x: int = player1_player_x + xscale // 2
+        player1_center_y: int = player1_player_y + yscale // 2
         if game_mode == "multiplayer" or game_mode == "calibration2":
-            player_2_center_x: int = player_2_player_x + xscale // 2
-            player_2_center_y: int = player_2_player_y + yscale // 2
+            player2_center_x: int = player2_player_x + xscale // 2
+            player2_center_y: int = player2_player_y + yscale // 2
             level = draw_board(
                 level,
                 color,
                 corner_color,
-                player_1_center_x,
-                player_1_center_y,
-                player_2_center_y,
+                player1_center_x,
+                player1_center_y,
+                player2_center_y,
             )
         else:  # game_mode == 'singleplayer' or game_mode == 'calibration3':
             level = draw_board(
-                level, color, corner_color, player_1_center_x, player_1_center_y
+                level, color, corner_color, player1_center_x, player1_center_y
             )
 
-        player_1_last_direction = draw_player(
-            player_1_direction,
-            player_1_last_direction,
-            player_1_player_x,
-            player_1_player_y,
-            player_1_images,
-            moving_flag_1,
+        player1_last_direction = draw_player(
+            player1_direction,
+            player1_last_direction,
+            player1_player_x,
+            player1_player_y,
+            player1_images,
+            player1_moving_flag,
         )
 
         if game_mode == "multiplayer" or game_mode == "calibration2":
-            player_2_last_direction = draw_player(
-                player_2_direction,
-                player_2_last_direction,
-                player_2_player_x,
-                player_2_player_y,
-                player_2_images,
+            player2_last_direction = draw_player(
+                player2_direction,
+                player2_last_direction,
+                player2_player_x,
+                player2_player_y,
+                player2_images,
             )
 
         draw_misc(cookie_winner[-1:], game_mode, misc_color)
 
         if moving and not game_won and not game_over:
-            player_1_turns_allowed = check_position(
-                player_1_direction, player_1_center_x, player_1_center_y, level
+            player1_turns_allowed = check_position(
+                player1_direction, player1_center_x, player1_center_y, level
             )
             if game_mode == "multiplayer" or game_mode == "calibration2":
-                player_2_turns_allowed = check_position(
-                    player_2_direction, player_2_center_x, player_2_center_y, level
+                player2_turns_allowed = check_position(
+                    player2_direction, player2_center_x, player2_center_y, level
                 )
             if not dev_mode and game_mode == "calibration1":
-                corner_color, player1_start_time_eeg, moving_flag_1 = ask_for_input(
+                corner_color, player1_start_time_eeg, player1_moving_flag = ask_for_input(
                     calibration_style,
                     player1_eeg_data,
-                    player_1_level_turns,
-                    moving_flag_1,
-                    eeg_1_in,
+                    player1_level_turns,
+                    player1_moving_flag,
+                    player1_eeg_in,
                     player1_start_time_eeg,
-                    player_1_total_game_turns,
-                    player_1_direction_command,
+                    player1_total_game_turns,
+                    player1_direction_command,
                     corner_color,
                 )
 
             if not dev_mode and game_mode!='calibration1':
-                player_1_speed, player_1_direction_command, player_1_level_turns, player1_eeg_data, failed_movements, level, player_1_time_to_corner = decision_maker(
-                    player1_start_mrk_time, eeg_1_in, player_1_total_game_turns, desired_direction_player_1, player_1_speed, player1_start_time_eeg, player_1_turns_allowed, player1_eeg_data,
-                    player_1_direction_command, player_1_level_turns, processing_function_1, player1_subject_id, desired_directions_map, failed_movements, level, player_1_last_activate_turn_tile, player_1_time_to_corner)
+                player1_speed, player1_direction_command, player1_level_turns, player1_eeg_data, failed_movements, level, player1_time_to_corner = decision_maker(
+                    player1_start_mrk_time, player1_eeg_in, player1_total_game_turns, player1_desired_direction_player, player1_speed, player1_start_time_eeg, player1_turns_allowed, player1_eeg_data,
+                    player1_direction_command, player1_level_turns, player1_processing_function, player1_subject_id, desired_directions_map, failed_movements, level, player1_last_activate_turn_tile, player1_time_to_corner)
                 if game_mode == 'multiplayer' or game_mode == 'calibration2':
-                    player_2_speed, player_2_direction_command, player_2_level_turns, player2_eeg_data, _, _, _ = decision_maker(player2_start_mrk_time,
-                        eeg_2_in, player_2_total_game_turns, desired_direction_player_2, player_2_speed, start_time_eeg_2, player_2_turns_allowed, player2_eeg_data,
-                        player_2_direction_command, player_2_level_turns, processing_function_2, player2_subject_id)
+                    player2_speed, player2_direction_command, player2_level_turns, player2_eeg_data, _, _, _ = decision_maker(player2_start_mrk_time,
+                                                                                                                              player2_eeg_in, player2_total_game_turns, player2_desired_direction_player, player2_speed, start_time_eeg_2, player2_turns_allowed, player2_eeg_data,
+                                                                                                                              player2_direction_command, player2_level_turns, player2_processing_function, player2_subject_id)
 
-            if moving_flag_1:
-                player_1_player_x, player_1_player_y = move_player(
-                    player_1_direction,
-                    player_1_turns_allowed,
-                    player_1_player_x,
-                    player_1_player_y,
-                    player_1_speed,
+            if player1_moving_flag:
+                player1_player_x, player1_player_y = move_player(
+                    player1_direction,
+                    player1_turns_allowed,
+                    player1_player_x,
+                    player1_player_y,
+                    player1_speed,
                 )
             if game_mode == "multiplayer" or game_mode == "calibration2":
-                player_2_player_x, player_2_player_y = move_player(
-                    player_2_direction,
-                    player_2_turns_allowed,
-                    player_2_player_x,
-                    player_2_player_y,
-                    player_2_speed,
+                player2_player_x, player2_player_y = move_player(
+                    player2_direction,
+                    player2_turns_allowed,
+                    player2_player_x,
+                    player2_player_y,
+                    player2_speed,
                 )
 
             (
                 player1_start_mrk_time,
-                player_1_last_activate_turn_tile,
-                player_1_speed,
-                player_1_time_to_corner,
+                player1_last_activate_turn_tile,
+                player1_speed,
+                player1_time_to_corner,
                 level,
                 cookie_winner_1_num,
                 player1_start_time_eeg,
             ) = check_collisions(
                 player1_start_mrk_time,
-                player_1_last_activate_turn_tile,
-                player_1_speed,
-                player_1_time_to_corner,
-                player_1_turns_allowed,
-                player_1_direction,
-                player_1_center_x,
-                player_1_center_y,
+                player1_last_activate_turn_tile,
+                player1_speed,
+                player1_time_to_corner,
+                player1_turns_allowed,
+                player1_direction,
+                player1_center_x,
+                player1_center_y,
                 level,
                 1,
                 player1_start_time_eeg,
-                moving_flag_1,
+                player1_moving_flag,
             )
             if game_mode == "multiplayer" or game_mode == "calibration2":
                 (
                     player2_start_mrk_time,
-                    player_2_last_activate_turn_tile,
-                    player_2_speed,
-                    player_2_time_to_corner,
+                    player2_last_activate_turn_tile,
+                    player2_speed,
+                    player2_time_to_corner,
                     level,
                     cookie_winner_2_num,
                     start_time_eeg_2,
                 ) = check_collisions(
                     player2_start_mrk_time,
-                    player_2_last_activate_turn_tile,
-                    player_2_speed,
-                    player_2_time_to_corner,
-                    player_2_turns_allowed,
-                    player_2_direction,
-                    player_2_center_x,
-                    player_2_center_y,
+                    player2_last_activate_turn_tile,
+                    player2_speed,
+                    player2_time_to_corner,
+                    player2_turns_allowed,
+                    player2_direction,
+                    player2_center_x,
+                    player2_center_y,
                     level,
                     2,
                     start_time_eeg_2,
@@ -1162,30 +1171,30 @@ def play_game(
                         cookie_winner.append(cookie_winner_2_num)
                     sound_win.play()
                     total_game_time.append("{:.2f}".format(time.time() - start_time))
-                    player_1_total_game_turns.append(player_1_level_turns)
+                    player1_total_game_turns.append(player1_level_turns)
                     if game_mode == "multiplayer" or game_mode == "calibration2":
-                        player_2_total_game_turns.append(player_2_level_turns)
+                        player2_total_game_turns.append(player2_level_turns)
                     play_won_flag = False
-                if len(player_1_start_execution_positions) == current_level + 1:
+                if len(player1_start_execution_positions) == current_level + 1:
                     game_over = True
                 game_won = True
 
-            player_1_time_to_corner += 1
+            player1_time_to_corner += 1
             if game_mode == "multiplayer" or game_mode == "calibration2":
-                player_2_time_to_corner += 1
+                player2_time_to_corner += 1
 
             for direction_index in range(0, 4):
                 if (
-                    player_1_direction_command == direction_index
-                    and player_1_turns_allowed[direction_index]
+                    player1_direction_command == direction_index
+                    and player1_turns_allowed[direction_index]
                 ):
-                    player_1_direction = direction_index
+                    player1_direction = direction_index
                 if game_mode == "multiplayer" or game_mode == "calibration2":
                     if (
-                        player_2_direction_command == direction_index
-                        and player_2_turns_allowed[direction_index]
+                        player2_direction_command == direction_index
+                        and player2_turns_allowed[direction_index]
                     ):
-                        player_2_direction = direction_index
+                        player2_direction = direction_index
 
         if (
             game_won and game_mode == "calibration2" and current_level % 4 != 0
@@ -1198,43 +1207,43 @@ def play_game(
             else:
                 (
                     current_level,
-                    player_2_direction,
-                    player_2_player_x,
-                    player_2_player_y,
-                    player_2_direction_command,
-                    player_1_direction,
-                    player_1_player_x,
-                    player_1_player_y,
-                    player_1_direction_command,
+                    player2_direction,
+                    player2_player_x,
+                    player2_player_y,
+                    player2_direction_command,
+                    player1_direction,
+                    player1_player_x,
+                    player1_player_y,
+                    player1_direction_command,
                     game_won,
                     play_won_flag,
                     startup_counter,
-                    player_1_speed,
-                    player_1_level_turns,
-                    player_2_speed,
+                    player1_speed,
+                    player1_level_turns,
+                    player2_speed,
                     level,
-                    player_2_level_turns,
+                    player2_level_turns,
                     cookies_at_the_beginning,
-                    desired_direction_player_1,
-                    desired_direction_player_2,
+                    player1_desired_direction_player,
+                    player2_desired_direction_player,
                     desired_directions_map,
                     failed_movements,
                 ) = reset_game(
                     current_level,
-                    player_2_direction,
-                    player_2_player_x,
-                    player_2_player_y,
-                    player_2_direction_command,
-                    player_1_direction,
-                    player_1_player_x,
-                    player_1_player_y,
-                    player_1_direction_command,
-                    player_2_speed,
+                    player2_direction,
+                    player2_player_x,
+                    player2_player_y,
+                    player2_direction_command,
+                    player1_direction,
+                    player1_player_x,
+                    player1_player_y,
+                    player1_direction_command,
+                    player2_speed,
                     level,
-                    player_2_level_turns,
+                    player2_level_turns,
                     cookies_at_the_beginning,
-                    desired_direction_player_1,
-                    desired_direction_player_2,
+                    player1_desired_direction_player,
+                    player2_desired_direction_player,
                 )
         else:
             misc_color = "lightpink4"  # if not-automatic then another color
@@ -1244,113 +1253,113 @@ def play_game(
                 run = False
             elif event.type == pygame.KEYDOWN:
                 if (
-                    (player_1_speed == 0 or player_2_speed == 0) and dev_mode
+                    (player1_speed == 0 or player2_speed == 0) and dev_mode
                 ) or game_mode == "calibration1":
-                    if event.key == pygame.K_RIGHT and player_1_turns_allowed[0]:
-                        player_1_direction_command = 0
-                        player_1_level_turns.append(player_1_direction_command)
-                        player_1_speed = original_speed
-                    elif event.key == pygame.K_LEFT and player_1_turns_allowed[1]:
-                        player_1_direction_command = 1
-                        player_1_level_turns.append(player_1_direction_command)
-                        player_1_speed = original_speed
-                    elif event.key == pygame.K_UP and player_1_turns_allowed[2]:
-                        player_1_direction_command = 2
-                        player_1_level_turns.append(player_1_direction_command)
-                        player_1_speed = original_speed
-                    elif event.key == pygame.K_DOWN and player_1_turns_allowed[3]:
-                        player_1_direction_command = 3
-                        player_1_level_turns.append(player_1_direction_command)
-                        player_1_speed = original_speed
+                    if event.key == pygame.K_RIGHT and player1_turns_allowed[0]:
+                        player1_direction_command = 0
+                        player1_level_turns.append(player1_direction_command)
+                        player1_speed = original_speed
+                    elif event.key == pygame.K_LEFT and player1_turns_allowed[1]:
+                        player1_direction_command = 1
+                        player1_level_turns.append(player1_direction_command)
+                        player1_speed = original_speed
+                    elif event.key == pygame.K_UP and player1_turns_allowed[2]:
+                        player1_direction_command = 2
+                        player1_level_turns.append(player1_direction_command)
+                        player1_speed = original_speed
+                    elif event.key == pygame.K_DOWN and player1_turns_allowed[3]:
+                        player1_direction_command = 3
+                        player1_level_turns.append(player1_direction_command)
+                        player1_speed = original_speed
 
                     if game_mode == "multiplayer" or game_mode == "calibration2":
-                        if event.key == pygame.K_d and player_2_turns_allowed[0]:
-                            player_2_direction_command = 0
-                            player_2_level_turns.append(player_2_direction_command)
-                            player_2_speed = original_speed
-                        elif event.key == pygame.K_a and player_2_turns_allowed[1]:
-                            player_2_direction_command = 1
-                            player_2_level_turns.append(player_2_direction_command)
-                            player_2_speed = original_speed
-                        elif event.key == pygame.K_w and player_2_turns_allowed[2]:
-                            player_2_direction_command = 2
-                            player_2_level_turns.append(player_2_direction_command)
-                            player_2_speed = original_speed
-                        elif event.key == pygame.K_s and player_2_turns_allowed[3]:
-                            player_2_direction_command = 3
-                            player_2_level_turns.append(player_2_direction_command)
-                            player_2_speed = original_speed
+                        if event.key == pygame.K_d and player2_turns_allowed[0]:
+                            player2_direction_command = 0
+                            player2_level_turns.append(player2_direction_command)
+                            player2_speed = original_speed
+                        elif event.key == pygame.K_a and player2_turns_allowed[1]:
+                            player2_direction_command = 1
+                            player2_level_turns.append(player2_direction_command)
+                            player2_speed = original_speed
+                        elif event.key == pygame.K_w and player2_turns_allowed[2]:
+                            player2_direction_command = 2
+                            player2_level_turns.append(player2_direction_command)
+                            player2_speed = original_speed
+                        elif event.key == pygame.K_s and player2_turns_allowed[3]:
+                            player2_direction_command = 3
+                            player2_level_turns.append(player2_direction_command)
+                            player2_speed = original_speed
                 if event.key == pygame.K_SPACE and game_over:
                     # I think I forgot to delete this before:
-                    # if game_mode == 'multiplayer' or game_mode == 'calibration2': player_2_total_game_turns.append(player_2_level_turns[1:])
+                    # if game_mode == 'multiplayer' or game_mode == 'calibration2': player2_total_game_turns.append(player2_level_turns[1:])
                     run = False
                 elif game_won and event.key == pygame.K_SPACE:
                     (
                         current_level,
-                        player_2_direction,
-                        player_2_player_x,
-                        player_2_player_y,
-                        player_2_direction_command,
-                        player_1_direction,
-                        player_1_player_x,
-                        player_1_player_y,
-                        player_1_direction_command,
+                        player2_direction,
+                        player2_player_x,
+                        player2_player_y,
+                        player2_direction_command,
+                        player1_direction,
+                        player1_player_x,
+                        player1_player_y,
+                        player1_direction_command,
                         game_won,
                         play_won_flag,
                         startup_counter,
-                        player_1_speed,
-                        player_1_level_turns,
-                        player_2_speed,
+                        player1_speed,
+                        player1_level_turns,
+                        player2_speed,
                         level,
-                        player_2_level_turns,
+                        player2_level_turns,
                         cookies_at_the_beginning,
-                        desired_direction_player_1,
-                        desired_direction_player_2,
+                        player1_desired_direction_player,
+                        player2_desired_direction_player,
                         desired_directions_map,
                         failed_movements,
                     ) = reset_game(
                         current_level,
-                        player_2_direction,
-                        player_2_player_x,
-                        player_2_player_y,
-                        player_2_direction_command,
-                        player_1_direction,
-                        player_1_player_x,
-                        player_1_player_y,
-                        player_1_direction_command,
-                        player_2_speed,
+                        player2_direction,
+                        player2_player_x,
+                        player2_player_y,
+                        player2_direction_command,
+                        player1_direction,
+                        player1_player_x,
+                        player1_player_y,
+                        player1_direction_command,
+                        player2_speed,
                         level,
-                        player_2_level_turns,
+                        player2_level_turns,
                         cookies_at_the_beginning,
-                        desired_direction_player_1,
-                        desired_direction_player_2,
+                        player1_desired_direction_player,
+                        player2_desired_direction_player,
                     )
             if dev_mode or game_mode == "calibration1":
                 if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_RIGHT and player_1_direction_command == 0:
-                        player_1_direction_command = player_1_direction
-                    elif event.key == pygame.K_LEFT and player_1_direction_command == 1:
-                        player_1_direction_command = player_1_direction
-                    elif event.key == pygame.K_UP and player_1_direction_command == 2:
-                        player_1_direction_command = player_1_direction
-                    elif event.key == pygame.K_DOWN and player_1_direction_command == 3:
-                        player_1_direction_command = player_1_direction
+                    if event.key == pygame.K_RIGHT and player1_direction_command == 0:
+                        player1_direction_command = player1_direction
+                    elif event.key == pygame.K_LEFT and player1_direction_command == 1:
+                        player1_direction_command = player1_direction
+                    elif event.key == pygame.K_UP and player1_direction_command == 2:
+                        player1_direction_command = player1_direction
+                    elif event.key == pygame.K_DOWN and player1_direction_command == 3:
+                        player1_direction_command = player1_direction
 
                     if game_mode == "multiplayer" or game_mode == "calibration2":
-                        if event.key == pygame.K_d and player_2_direction_command == 0:
-                            player_2_direction_command = player_2_direction
+                        if event.key == pygame.K_d and player2_direction_command == 0:
+                            player2_direction_command = player2_direction
                         elif (
-                            event.key == pygame.K_a and player_2_direction_command == 1
+                            event.key == pygame.K_a and player2_direction_command == 1
                         ):
-                            player_2_direction_command = player_2_direction
+                            player2_direction_command = player2_direction
                         elif (
-                            event.key == pygame.K_w and player_2_direction_command == 2
+                            event.key == pygame.K_w and player2_direction_command == 2
                         ):
-                            player_2_direction_command = player_2_direction
+                            player2_direction_command = player2_direction
                         elif (
-                            event.key == pygame.K_s and player_2_direction_command == 3
+                            event.key == pygame.K_s and player2_direction_command == 3
                         ):
-                            player_2_direction_command = player_2_direction
+                            player2_direction_command = player2_direction
 
         pygame.display.flip()
 
@@ -1372,15 +1381,15 @@ def play_game(
             output_name_txt = f"assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}_and_sub_{player2_subject_id:02d}.txt"
 
         file = open(output_name_txt, "w")
-        file.write(f"player_1_ID, {player1_subject_id}\n")
-        file.write(f"player_2_ID, {player2_subject_id}\n")
+        file.write(f"player1_ID, {player1_subject_id}\n")
+        file.write(f"player2_ID, {player2_subject_id}\n")
         file.write(f"game_mode, {game_mode}\n")
         file.write(f"total_game_time, {total_game_time}\n")
         file.write(f"cookie_winner, {cookie_winner}\n")
         file.write(
-            f"player_1_turns, {player_1_total_game_turns}\n"
+            f"player1_turns, {player1_total_game_turns}\n"
         )  # Represents the movements of the character
-        file.write(f"player_2_turns, {player_2_total_game_turns}\n")
+        file.write(f"player2_turns, {player2_total_game_turns}\n")
         file.close()
 
         if (
