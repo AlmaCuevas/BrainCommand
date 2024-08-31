@@ -1,15 +1,16 @@
+import mne
 from processing_eeg_methods.data_dataclass import ProcessingMethods
 from processing_eeg_methods.data_loaders import load_data_labels_based_on_dataset
-from processing_eeg_methods.data_utils import convert_into_independent_channels
+from processing_eeg_methods.data_utils import convert_into_independent_channels, data_normalization
 import numpy as np
 import os
-
+from scipy import signal
 dataset_info = {  # BrainCommand
     "dataset_name": "braincommand",
     "#_class": 4,
     "target_names": ["Derecha", "Izquierda", "Arriba", "Abajo"],
     "#_channels": 8,
-    "samples": 350,  # 250*1.4
+    "samples": 325,  # 250*1.4
     "sample_rate": 250,
     "montage": "standard_1020",
     "channels_names": ["F3", "C3", "F5", "FC5", "C5", "F7", "FT7", "T7"],
@@ -65,12 +66,37 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
 
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
-def BrainCommand_test(data, subject_id: int, processing_function: ProcessingMethods):
+def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMethods):
+
+    # Preprocess
+    x_array = np.array([eeg])
+    x_array = x_array[
+              :, :, :-9
+              ]  # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
+    x_array = np.transpose(x_array, (0, 2, 1))
+    x_array = signal.detrend(x_array)
+    data = data_normalization(x_array)
+
     data_test, _ = convert_into_independent_channels(
         data, [0]
     )
     data_test = np.transpose(np.array([data_test]), (1, 0, 2))
 
+    frequency_bandwidth = [0.5, 40]
+    iir_params = dict(order=8, ftype="butter")
+    filt = mne.filter.create_filter(
+        data_test,
+        250,
+        l_freq=frequency_bandwidth[0],
+        h_freq=frequency_bandwidth[1],
+        method="iir",
+        iir_params=iir_params,
+        verbose=True,
+    )
+    filtered = signal.sosfiltfilt(filt["sos"], data_test)
+    data_test = filtered.astype("float64")
+
+    # Process
     probs_by_channels = []
     for pseudo_trial in range(len(data_test)):
         processing_function.test(
@@ -81,7 +107,7 @@ def BrainCommand_test(data, subject_id: int, processing_function: ProcessingMeth
         probs_by_channels.append(
             processing_function.voting_decision(
             voting_by_mode = False,
-            weighted_accuracy= True,
+            weighted_accuracy= False,
             )
         )
 
@@ -92,7 +118,7 @@ def BrainCommand_test(data, subject_id: int, processing_function: ProcessingMeth
 if __name__ == "__main__":
     import time
 
-    subject_id = 26
+    subject_id = 27
     game_mode = 'calibration3'
     selected_classes = [0, 1, 2, 3]
 
