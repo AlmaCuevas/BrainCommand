@@ -2,6 +2,7 @@ import copy
 import random
 
 from processing_eeg_methods.data_dataclass import ProcessingMethods
+from processing_eeg_methods.data_utils import flat_a_list
 from BrainCommand_classification import BrainCommand_train, BrainCommand_test
 
 # from plot_current_trial import check_eeg
@@ -34,7 +35,6 @@ import time
 import pylsl
 import numpy as np
 import pandas as pd
-from scipy import signal
 
 # The report file will only be saved when the game finishes without quitting.
 # You don't have to close or open a new game to select a different mode.
@@ -50,7 +50,7 @@ def lsl_inlet(name: str, number_subject: int = 1):
     return inlet
 
 
-def get_samples_from_certain_timestamp(eeg_in, start_timestamp, end_timestamp):
+def get_samples_from_certain_timestamps(eeg_in, start_timestamp, end_timestamp):
     data = []
     timestamps = []
     while True:
@@ -60,20 +60,7 @@ def get_samples_from_certain_timestamp(eeg_in, start_timestamp, end_timestamp):
             timestamps.append(timestamp)
         if timestamp > end_timestamp:
             break
-        try:
-            print(f"inicio del primer sample disponible: {timestamps[0]}, marker start: {start_timestamp}")
-            print(f"fin del primer sample disponible: {timestamps[-1]}, marker end: {end_timestamp}")
-            print(len(timestamps))
-        except:
-            print("it failed")
-        # todo: check on solo, because its always less than 325, my theory is that the start_timestamp is way more than the first one available.
-        # TODO: Is it because the first timestamp is earlier than the previous end_timestamp (overlapping)?
-        # todo: or is it because the lsl gets lost after a while?
     return data, timestamps
-
-
-def flat_a_list(list_to_flat: list):
-    return [x for xs in list_to_flat for x in xs]
 
 
 def play_game(
@@ -260,12 +247,12 @@ def play_game(
         ),
     ]
 
-    start_2: list = player2_start_execution_positions[current_level]
-    player2_player_x: int = int(start_2[0] * xscale)
-    player2_player_y: int = int(start_2[1] * yscale)
-    player2_direction: int = start_2[2]
-    player2_last_direction: int = start_2[2]
-    player2_direction_command: int = start_2[2]
+    player2_start: list = player2_start_execution_positions[current_level]
+    player2_player_x: int = int(player2_start[0] * xscale)
+    player2_player_y: int = int(player2_start[1] * yscale)
+    player2_direction: int = player2_start[2]
+    player2_last_direction: int = player2_start[2]
+    player2_direction_command: int = player2_start[2]
     player2_last_activate_turn_tile: list[int] = [4, 4]
     player2_time_to_corner: int = 0
     corner_color = "blue"
@@ -312,6 +299,7 @@ def play_game(
     player1_turns_allowed: list[bool] = [False, False, False, False]
 
     ## Other
+    start_time = 0 # Init
     player1_direction_command: int = player1_start[2]
     if dev_mode:
         player1_speed: int = 5
@@ -324,21 +312,17 @@ def play_game(
 
     failed_movements = 0
     minimum_total_trials_per_movement = 20
-    moving: bool = False
     startup_counter: int = 0
     game_over: bool = False
     game_won: bool = False
     play_won_flag: bool = True
-    player1_last_activate_turn_tile: list[int] = [
-        4,
-        4,
-    ]  # Check that in all levels this is a 0 pixel
+    player1_last_activate_turn_tile: list[int] = [4, 4]  # Check that in all levels this is a 0 pixel
     player1_time_to_corner: int = 0
     cookie_winner: list = []
-    cookie_winner_2_num: int = 0
+    player2_cookie_winner_num: int = 0
     player1_moving_flag: bool = True
     player1_start_time_eeg: float = 0
-    start_time_eeg_2: float = 0
+    player2_start_time_eeg: float = 0
     misc_color: str = "lightpink4"
 
     player1_desired_direction_player = 0  # default to avoid missing variable
@@ -705,10 +689,10 @@ def play_game(
             level: list,
             color: str,
             corner_color: str,
-            center_1_x: int,
-            center_1_y: int,
-            center_2_x: int = 0,
-            center_2_y: int = 0,
+            player1_center_x: int,
+            player1_center_y: int,
+            player2_center_x: int = 0,
+            player2_center_y: int = 0,
     ):
         for i in range(len(level)):
             for j in range(len(level[i])):
@@ -805,14 +789,14 @@ def play_game(
                     pygame.draw.rect(
                         screen,
                         corner_color,
-                        [center_1_x - xscale, center_1_y - yscale, 60, 60],
+                        [player1_center_x - xscale, player1_center_y - yscale, 60, 60],
                         border_radius=10,
                     )
                 if level[i][j] == -2:
                     pygame.draw.rect(
                         screen,
                         corner_color,
-                        [center_2_x - xscale, center_2_y - yscale, 60, 60],
+                        [player2_center_x - xscale, player2_center_y - yscale, 60, 60],
                         border_radius=10,
                     )
         return level
@@ -838,23 +822,38 @@ def play_game(
                        desired_directions_map: list = [], failed_movements: int = 0, level: list = [],
                        last_activate_turn_tile: list = [], time_to_corner: int = 0):
         """
-        Section to process direction prediction with the EEG.
+        Section to process the direction by predicting with the EEG, or by random if in debug.
         """
-        try:
-            next_direction = desired_directions_map[len(player_level_turns) - failed_movements]
-        except IndexError:
-            next_direction = 99  # end, when there is no other direction pending
-        if game_mode == 'singleplayer' and next_direction in automatic_movement_classes and any(
-                player_turns_allowed[i] for i in automatic_movement_classes) and time_to_corner > 10:
-            player_direction_command = next_direction
-            time_to_corner = 0
-            player_level_turns.append(player_direction_command)
-            player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
-        elif time.time() - start_time_eeg > 1.4 and player_speed == 0:
-            channel.play(sound_thud)
+        # try:
+        #     next_direction = desired_directions_map[len(player_level_turns) - failed_movements]
+        # except IndexError:
+        #     next_direction = 99  # end, when there is no other direction pending
+        # if game_mode == 'singleplayer' and next_direction in automatic_movement_classes and any(
+        #         player_turns_allowed[i] for i in automatic_movement_classes) and time_to_corner > 10:
+        #     player_direction_command = next_direction
+        #     time_to_corner = 0
+        #     player_level_turns.append(player_direction_command)
+        #     player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
+        # el
+        if time.time() - start_time_eeg > 1.4 and player_speed == 0:
             end_mrk_time = pylsl.local_clock()
-            eeg, t_eeg = get_samples_from_certain_timestamp(eeg_in, start_mrk_time, end_mrk_time)
-            if eeg:
+
+            # Redraw to avoid the blue lingering
+            screen.fill("black")
+            level[last_activate_turn_tile[0]][
+                last_activate_turn_tile[1]
+            ] = 0
+            level = draw_board(level, color, corner_color, player1_center_x, player1_center_y)
+
+            screen.blit(
+                player1_images[player1_last_direction],
+                (player1_player_x - xscale / 2, player1_player_y - yscale / 2),
+            ) # Update the player1 image
+
+            pygame.display.flip()
+
+            eeg, t_eeg = get_samples_from_certain_timestamps(eeg_in, start_mrk_time, end_mrk_time) # todo: check that the <325 sample got fixed too
+            if len(eeg)>325: # todo: check that the saving got fix the problem with the first line always lost, if yes, we wouldnt need that condition anymore
                 eeg = eeg[-325:]
                 print(len(eeg))
                 # if len(player_level_turns)!=0: # Uncomment if you want to see the trial per trial
@@ -907,9 +906,7 @@ def play_game(
                     else:
                         prediction_movement = player_level_turns[-1]
                         failed_movements += 1
-                        level[last_activate_turn_tile[0]][
-                            last_activate_turn_tile[1]
-                        ] = 0
+
                 else:
                     allowed_movement_random = [
                         x
@@ -1007,11 +1004,7 @@ def play_game(
                 start_time_eeg = time.time()
         return corner_color, start_time_eeg, moving_flag
 
-    run = True
-    start_time = time.time()  # In case you are running dev_mode
-    while run:
-        timer.tick(fps)
-        screen.fill("black")
+    def pregame_countdown(startup_counter, game_over: bool, game_won: bool, dev_mode: bool, start_time):
         if startup_counter < 200 and not game_over and not game_won and not dev_mode:
             moving = False
             startup_counter += 1
@@ -1026,24 +1019,22 @@ def play_game(
                 start_time = time.time()
         else:
             moving = True
+        return moving, startup_counter, start_time
+
+    run = True
+    while run:
+        timer.tick(fps)
+        screen.fill("black")
+        moving, startup_counter, start_time = pregame_countdown(startup_counter, game_over, game_won, dev_mode, start_time)
 
         player1_center_x: int = player1_player_x + xscale // 2
         player1_center_y: int = player1_player_y + yscale // 2
         if game_mode == "multiplayer" or game_mode == "calibration2":
             player2_center_x: int = player2_player_x + xscale // 2
             player2_center_y: int = player2_player_y + yscale // 2
-            level = draw_board(
-                level,
-                color,
-                corner_color,
-                player1_center_x,
-                player1_center_y,
-                player2_center_y,
-            )
+            level = draw_board(level, color, corner_color, player1_center_x, player1_center_y, player2_center_x, player2_center_y)
         else:  # game_mode == 'singleplayer' or game_mode == 'calibration3':
-            level = draw_board(
-                level, color, corner_color, player1_center_x, player1_center_y
-            )
+            level = draw_board(level, color, corner_color, player1_center_x, player1_center_y)
 
         player1_last_direction = draw_player(
             player1_direction,
@@ -1092,7 +1083,7 @@ def play_game(
                     player1_direction_command, player1_level_turns, player1_processing_function, player1_subject_id, desired_directions_map, failed_movements, level, player1_last_activate_turn_tile, player1_time_to_corner)
                 if game_mode == 'multiplayer' or game_mode == 'calibration2':
                     player2_speed, player2_direction_command, player2_level_turns, player2_eeg_data, _, _, _ = decision_maker(player2_start_mrk_time,
-                                                                                                                              player2_eeg_in, player2_total_game_turns, player2_desired_direction_player, player2_speed, start_time_eeg_2, player2_turns_allowed, player2_eeg_data,
+                                                                                                                              player2_eeg_in, player2_total_game_turns, player2_desired_direction_player, player2_speed, player2_start_time_eeg, player2_turns_allowed, player2_eeg_data,
                                                                                                                               player2_direction_command, player2_level_turns, player2_processing_function, player2_subject_id)
 
             if player1_moving_flag:
@@ -1118,7 +1109,7 @@ def play_game(
                 player1_speed,
                 player1_time_to_corner,
                 level,
-                cookie_winner_1_num,
+                player1_cookie_winner_num,
                 player1_start_time_eeg,
             ) = check_collisions(
                 player1_start_mrk_time,
@@ -1141,8 +1132,8 @@ def play_game(
                     player2_speed,
                     player2_time_to_corner,
                     level,
-                    cookie_winner_2_num,
-                    start_time_eeg_2,
+                    player2_cookie_winner_num,
+                    player2_start_time_eeg,
                 ) = check_collisions(
                     player2_start_mrk_time,
                     player2_last_activate_turn_tile,
@@ -1154,7 +1145,7 @@ def play_game(
                     player2_center_y,
                     level,
                     2,
-                    start_time_eeg_2,
+                    player2_start_time_eeg,
                 )
 
             ## Section to decide if the game is finished.
@@ -1163,12 +1154,12 @@ def play_game(
 
             if cookies_at_the_beginning != flat_a_list(level).count(2):
                 if play_won_flag:
-                    if cookie_winner_1_num:
-                        cookie_winner.append(cookie_winner_1_num)
-                    elif cookie_winner_2_num and (
+                    if player1_cookie_winner_num:
+                        cookie_winner.append(player1_cookie_winner_num)
+                    elif player2_cookie_winner_num and (
                         game_mode == "multiplayer" or game_mode == "calibration2"
                     ):
-                        cookie_winner.append(cookie_winner_2_num)
+                        cookie_winner.append(player2_cookie_winner_num)
                     sound_win.play()
                     total_game_time.append("{:.2f}".format(time.time() - start_time))
                     player1_total_game_turns.append(player1_level_turns)

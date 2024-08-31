@@ -91,7 +91,7 @@ def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMetho
         h_freq=frequency_bandwidth[1],
         method="iir",
         iir_params=iir_params,
-        verbose=True,
+        verbose=False,
     )
     filtered = signal.sosfiltfilt(filt["sos"], data_test)
     data_test = filtered.astype("float64")
