@@ -917,8 +917,6 @@ def play_game(
                         random.randint(0, len(allowed_movement_random) - 1)
                     ]  # exclusive range
                     # time_to_corner = 0
-                # todo: is the timing where the color is blue matching the trial exactly?
-                # todo: the time in solo can get as low as 306,
                 # todo: I took off the automatic movements bc it kept messing up with the game. FIX!
                 player_eeg_data["time"].append(
                     eeg[-325:]
