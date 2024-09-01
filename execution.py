@@ -794,7 +794,7 @@ def play_game(
             player_turns_allowed,
             subject_id: int,
     ) -> int:
-        probs_array = BrainCommand_test(eeg, subject_id, processing_function)[0]
+        probs_array = BrainCommand_test(eeg, subject_id, processing_function, fs)[0]
         valid_array = [
             0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)
         ]

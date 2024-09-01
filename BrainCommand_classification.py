@@ -10,7 +10,7 @@ dataset_info = {  # BrainCommand
     "#_class": 4,
     "target_names": ["Derecha", "Izquierda", "Arriba", "Abajo"],
     "#_channels": 8,
-    "samples": 325,  # 250*1.4
+    "samples": 325,  # 250*1.3
     "sample_rate": 250,
     "montage": "standard_1020",
     "channels_names": ["F3", "C3", "F5", "FC5", "C5", "F7", "FT7", "T7"],
@@ -66,7 +66,7 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
 
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
-def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMethods):
+def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMethods, fs: int):
 
     # Preprocess
     x_array = np.array([eeg])
@@ -86,7 +86,7 @@ def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMetho
     iir_params = dict(order=8, ftype="butter")
     filt = mne.filter.create_filter(
         data_test,
-        250,
+        fs,
         l_freq=frequency_bandwidth[0],
         h_freq=frequency_bandwidth[1],
         method="iir",
