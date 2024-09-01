@@ -26,7 +26,7 @@ class MainMenu(Menu):
         Menu.__init__(self, game, dev_mode, player1_ID, player2_ID)
         self.state = "Tutorial"
         self.tutorial_1_x, self.tutorial_1_y = self.mid_w, self.mid_h - 100
-        self.calibration_1_x, self.calibration_1_y = self.mid_w, self.mid_h - 50
+        self.free_singleplayer_x, self.free_singleplayer_y = self.mid_w, self.mid_h - 50
         self.calibration_2_x, self.calibration_2_y = self.mid_w, self.mid_h + 0
         self.calibration_3_x, self.calibration_3_y = self.mid_w, self.mid_h + 50
         self.multiplayerx, self.multiplayery = self.mid_w, self.mid_h + 100
@@ -42,7 +42,7 @@ class MainMenu(Menu):
             self.game.display.fill(self.game.BLACK)
             self.game.draw_text('Brain Command', 70, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 - 300)
             self.game.draw_text("Tutorial", 40, self.tutorial_1_x, self.tutorial_1_y)
-            self.game.draw_text("Calibración 1", 40, self.calibration_1_x, self.calibration_1_y)
+            self.game.draw_text("Solo libre", 40, self.free_singleplayer_x, self.free_singleplayer_y)
             self.game.draw_text("Calibración 2", 40, self.calibration_2_x, self.calibration_2_y)
             self.game.draw_text("Calibración 3", 40, self.calibration_3_x, self.calibration_3_y)
             self.game.draw_text("Competitivo", 40, self.multiplayerx, self.multiplayery)
@@ -55,9 +55,9 @@ class MainMenu(Menu):
     def move_cursor(self):
         if self.game.DOWN_KEY:
             if self.state == 'Tutorial':
-                self.cursor_rect.midtop = (self.calibration_1_x + self.offset, self.calibration_1_y)
-                self.state = 'Calibration'
-            elif self.state == 'Calibration':
+                self.cursor_rect.midtop = (self.free_singleplayer_x + self.offset, self.free_singleplayer_y)
+                self.state = 'Free Singleplayer'
+            elif self.state == 'Free Singleplayer':
                 self.cursor_rect.midtop = (self.calibration_2_x + self.offset, self.calibration_2_y)
                 self.state = 'Calibration 2'
             elif self.state == 'Calibration 2':
@@ -92,9 +92,9 @@ class MainMenu(Menu):
                 self.cursor_rect.midtop = (self.calibration_2_x + self.offset, self.calibration_2_y)
                 self.state = 'Calibration 2'
             elif self.state == 'Calibration 2':
-                self.cursor_rect.midtop = (self.calibration_1_x + self.offset, self.calibration_1_y)
-                self.state = 'Calibration'
-            elif self.state == 'Calibration':
+                self.cursor_rect.midtop = (self.free_singleplayer_x + self.offset, self.free_singleplayer_y)
+                self.state = 'Free Singleplayer'
+            elif self.state == 'Free Singleplayer':
                 self.cursor_rect.midtop = (self.tutorial_1_x + self.offset, self.tutorial_1_y)
                 self.state = 'Tutorial'
 
@@ -108,15 +108,15 @@ class MainMenu(Menu):
             if self.state == 'Tutorial':
                 self.game.playing = True
                 tutorial_calibration2.tutorial()  # No interactive video
-            elif self.state == 'Calibration':
+            elif self.state == 'Free Singleplayer':
                 self.game.playing = True
-                execution.play_game(game_mode='calibration1', player1_subject_id=self.player1_ID, player2_subject_id=0,
-                                    dev_mode=self.dev_mode)  # With keys
+                execution.play_game(game_mode='free singleplayer', player1_subject_id=self.player1_ID, player2_subject_id=0,
+                                    dev_mode=self.dev_mode)
             elif self.state == 'Calibration 2':
                 self.game.playing = True
                 execution.play_game(game_mode='calibration2', player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID,
                                     dev_mode=self.dev_mode)  # With defined toggle
-            elif self.state == 'Calibration 3':
+            elif self.state == 'Free Singleplayer':
                 self.game.playing = True
                 execution.play_game(game_mode='calibration3', player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID,
                                     dev_mode=self.dev_mode)  # With defined toggle

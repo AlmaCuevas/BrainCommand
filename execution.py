@@ -12,8 +12,6 @@ from board_execution import (
     multiplayer_player2_start_execution_positions,
     singleplayer_start_execution_positions,
     singleplayer_execution_boards,
-    calibration_player1_start_execution_positions,
-    calibration_execution_boards,
 )
 from board_execution_closed_map import (
     closed_map_boards,
@@ -95,15 +93,7 @@ def play_game(
         player2_subject_id
     )  # It becomes str during the main menu parsing
 
-    if game_mode == "calibration1":  # Maze
-        player1_start_execution_positions = (
-            calibration_player1_start_execution_positions
-        )
-        player2_start_execution_positions = (
-            multiplayer_player2_start_execution_positions  # It doesn't matter
-        )
-        execution_boards = calibration_execution_boards
-    elif game_mode == "calibration2":  # closed-map
+    if game_mode == "calibration2":  # closed-map
         player1_start_execution_positions = closed_map_player1_positions
         player2_start_execution_positions = closed_map_player2_positions
         execution_boards = closed_map_boards
@@ -953,15 +943,15 @@ def play_game(
             total_game_turns,
             direction_command,
             corner_color,
+            start_timestamp,
+            end_timestamp
     ):
         if calibration_style == "only_blue":  # think and press, no forced waiting time
             if (
                     eeg_data["movement index"][-1] != len(level_turns) or not moving_flag
             ):  # Valid direction or already EEG caption in process
                 # Right after the person click the arrow, we get the last 1.4s when they also thought the movement
-                eeg, t_eeg = eeg_in.pull_chunk(
-                    timeout=0, max_samples=int(1.4 * fs)
-                )  # Take the last 1.4 seconds
+                eeg, eeg_t = get_samples_from_certain_timestamps(eeg_in, start_timestamp, end_timestamp)
                 if eeg:
                     eeg_data["game index"].append(len(total_game_turns))
                     eeg_data["movement index"].append(len(level_turns))
@@ -1062,20 +1052,8 @@ def play_game(
                 player2_turns_allowed = check_position(
                     player2_direction, player2_center_x, player2_center_y, level
                 )
-            if not dev_mode and game_mode == "calibration1":
-                corner_color, player1_start_time_eeg, player1_moving_flag = ask_for_input(
-                    calibration_style,
-                    player1_eeg_data,
-                    player1_level_turns,
-                    player1_moving_flag,
-                    player1_eeg_in,
-                    player1_start_time_eeg,
-                    player1_total_game_turns,
-                    player1_direction_command,
-                    corner_color,
-                )
 
-            if not dev_mode and game_mode!='calibration1':
+            if not dev_mode:
                 player1_speed, player1_direction_command, player1_level_turns, player1_eeg_data, failed_movements, level, player1_time_to_corner = decision_maker(
                     player1_start_mrk_time, player1_eeg_in, player1_total_game_turns, player1_desired_direction_player, player1_speed, player1_start_time_eeg, player1_turns_allowed, player1_eeg_data,
                     player1_direction_command, player1_level_turns, player1_processing_function, player1_subject_id, desired_directions_map, failed_movements, level, player1_last_activate_turn_tile, player1_time_to_corner)
@@ -1243,7 +1221,7 @@ def play_game(
             elif event.type == pygame.KEYDOWN:
                 if (
                     (player1_speed == 0 or player2_speed == 0) and dev_mode
-                ) or game_mode == "calibration1":
+                ):
                     if event.key == pygame.K_RIGHT and player1_turns_allowed[0]:
                         player1_direction_command = 0
                         player1_level_turns.append(player1_direction_command)
@@ -1323,7 +1301,7 @@ def play_game(
                         player1_desired_direction_player,
                         player2_desired_direction_player,
                     )
-            if dev_mode or game_mode == "calibration1":
+            if dev_mode:
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_RIGHT and player1_direction_command == 0:
                         player1_direction_command = player1_direction
@@ -1355,7 +1333,7 @@ def play_game(
     if not dev_mode:
         player1_eeg_data["movement index"] = player1_eeg_data["movement index"][
             1:
-        ]  # Avoid the init, consequence is that calibration1 the first one is 1 instead of 0. No better solution found so far
+        ]
         pd.DataFrame(player1_eeg_data).to_csv(
             f"assets/game_saved_files/eeg_data_{game_mode}_sub{player1_subject_id:02d}.csv"
         )
