@@ -69,9 +69,6 @@ def play_game(
     process_mode: bool = True,
 ):  # Process mode will train after a calibration and test during an execution
     fs: int = 250  # Unicorn Hybrid Black
-    calibration_style: str = (
-        "only_blue"  # or "green_blue" . "green_blue" doesn't make sense with the closed-map: calibration 2.
-    )
     automatic_movement_classes: list = [2, 3]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
     movement_option = [0, 1, 2, 3]  # The two words that the person can choose
 

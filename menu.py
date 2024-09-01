@@ -44,7 +44,7 @@ class MainMenu(Menu):
             self.game.draw_text("Tutorial", 40, self.tutorial_1_x, self.tutorial_1_y)
             self.game.draw_text("Solo libre", 40, self.free_singleplayer_x, self.free_singleplayer_y)
             self.game.draw_text("Calibración 2", 40, self.calibration_2_x, self.calibration_2_y)
-            self.game.draw_text("Calibración 3", 40, self.calibration_3_x, self.calibration_3_y)
+            self.game.draw_text("Calibración", 40, self.calibration_3_x, self.calibration_3_y)
             self.game.draw_text("Competitivo", 40, self.multiplayerx, self.multiplayery)
             self.game.draw_text("Solo", 40, self.singleplayerx, self.singleplayery)
             self.game.draw_text("Créditos", 40, self.creditsx, self.creditsy)
@@ -62,8 +62,8 @@ class MainMenu(Menu):
                 self.state = 'Calibration 2'
             elif self.state == 'Calibration 2':
                 self.cursor_rect.midtop = (self.calibration_3_x + self.offset, self.calibration_3_y)
-                self.state = 'Calibration 3'
-            elif self.state == 'Calibration 3':
+                self.state = 'Calibration'
+            elif self.state == 'Calibration':
                 self.cursor_rect.midtop = (self.multiplayerx + self.offset, self.multiplayery)
                 self.state = 'Multiplayer'
             elif self.state == 'Multiplayer':
@@ -116,7 +116,7 @@ class MainMenu(Menu):
                 self.game.playing = True
                 execution.play_game(game_mode='calibration2', player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID,
                                     dev_mode=self.dev_mode)  # With defined toggle
-            elif self.state == 'Free Singleplayer':
+            elif self.state == 'Calibration':
                 self.game.playing = True
                 execution.play_game(game_mode='calibration3', player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID,
                                     dev_mode=self.dev_mode)  # With defined toggle
