@@ -5,7 +5,7 @@ from processing_eeg_methods.data_dataclass import ProcessingMethods
 from processing_eeg_methods.data_utils import flat_a_list
 from BrainCommand_classification import BrainCommand_train, BrainCommand_test
 
-# from plot_current_trial import check_eeg
+#from plot_current_trial import check_eeg
 from board_execution import (
     multiplayer_execution_boards,
     multiplayer_player1_start_execution_positions,
@@ -58,7 +58,7 @@ def get_samples_from_certain_timestamps(eeg_in, start_timestamp, end_timestamp):
             timestamps.append(timestamp)
         if timestamp > end_timestamp:
             break
-    return data, timestamps
+    return data[-325:], timestamps[-325:] # Adjust quantity to 325 (instead of 350) to ensure we always have the correct amount
 
 
 def play_game(
@@ -70,7 +70,7 @@ def play_game(
 ):  # Process mode will train after a calibration and test during an execution
     fs: int = 250  # Unicorn Hybrid Black
     automatic_movement_classes: list = [2, 3]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
-    movement_option = [0, 1, 2, 3]  # The two words that the person can choose
+    movement_option = [0, 1]  # The two words that the person can choose
 
     player1_eeg_data: dict = {
         "time": [],
@@ -130,7 +130,6 @@ def play_game(
 
     player1_start_mrk_time = 0
     player1_end_mrk_time = 0
-    player2_end_mrk_time = 0
 
     player1_processing_function = None
     player2_processing_function = None
@@ -794,10 +793,10 @@ def play_game(
             player_turns_allowed,
             subject_id: int,
     ) -> int:
-        probs_array = BrainCommand_test(eeg, subject_id, processing_function, fs)[0]
-        valid_array = [
-            0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)
-        ]
+        valid_array = BrainCommand_test(eeg, subject_id, processing_function, fs)[0]
+        # valid_array = [
+        #     0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)
+        # ]
         print(valid_array)
         return np.argmax(
             valid_array
@@ -811,17 +810,6 @@ def play_game(
         """
         Section to process the direction by predicting with the EEG, or by random if in debug.
         """
-        # try:
-        #     next_direction = desired_directions_map[len(player_level_turns) - failed_movements]
-        # except IndexError:
-        #     next_direction = 99  # end, when there is no other direction pending
-        # if game_mode == 'singleplayer' and next_direction in automatic_movement_classes and any(
-        #         player_turns_allowed[i] for i in automatic_movement_classes) and time_to_corner > 10:
-        #     player_direction_command = next_direction
-        #     time_to_corner = 0
-        #     player_level_turns.append(player_direction_command)
-        #     player_speed = original_speed  # Otherwise speed doesn't return, that it's only for arrow key
-        # el
         if time.time() - start_time_eeg > 1.4 and player_speed == 0:
             end_mrk_time = pylsl.local_clock()
 
@@ -839,12 +827,13 @@ def play_game(
 
             pygame.display.flip()
 
-            eeg, t_eeg = get_samples_from_certain_timestamps(eeg_in, start_mrk_time, end_mrk_time) # todo: check that the <325 sample got fixed too
-            if len(eeg)>325: # todo: check that the saving got fix the problem with the first line always lost, if yes, we wouldnt need that condition anymore
-                eeg = eeg[-325:]
+            eeg, t_eeg = get_samples_from_certain_timestamps(eeg_in, start_mrk_time, end_mrk_time)
+            if len(eeg)>=325:
                 print(len(eeg))
-                # if len(player_level_turns)!=0: # Uncomment if you want to see the trial per trial
-                # check_eeg(eeg, t_eeg, start_mrk_time, end_mrk_time)
+                #if len(player_level_turns)!=0: # Uncomment if you want to see the trial per trial
+                 #   check_eeg(eeg, t_eeg, start_mrk_time, end_mrk_time)
+
+
                 if (
                         game_mode == "calibration2"
                 ):  # This is the movement decider. Not by keys and not by EEG
@@ -865,17 +854,14 @@ def play_game(
                 elif (
                         game_mode == "free singleplayer"
                         and process_mode
-                        and len(player_level_turns) != 0
-                ):  # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
+                ):
                     prediction_movement = eeg_cleaning_to_prediction(
                         eeg,
                         processing_function=processing_function,
                         player_turns_allowed=player_turns_allowed,
                         subject_id=subject_id,
                     )
-                elif (
-                        process_mode and len(player_level_turns) != 0
-                ):  # The first movement never have the data complete, that is because the first blue is just to show position. The start movement is in its place.
+                elif process_mode:
                     eeg_prediction_movement = eeg_cleaning_to_prediction(
                         eeg,
                         processing_function=processing_function,
@@ -885,7 +871,10 @@ def play_game(
                     next_direction = desired_directions_map[
                         len(player_level_turns) - failed_movements
                         ]
-                    if (
+                    if game_mode == 'singleplayer' and next_direction in automatic_movement_classes and any(
+                            player_turns_allowed[i] for i in automatic_movement_classes):
+                            prediction_movement = next_direction
+                    elif (
                             eeg_prediction_movement == next_direction
                             or len(set(player_level_turns[-10:])) == 1
                     ):  # If it fails more than 10 times, let the user move on.
@@ -903,8 +892,7 @@ def play_game(
                     prediction_movement = allowed_movement_random[
                         random.randint(0, len(allowed_movement_random) - 1)
                     ]  # exclusive range
-                    # time_to_corner = 0
-                # todo: I took off the automatic movements bc it kept messing up with the game. FIX!
+                    time_to_corner = 0
                 player_eeg_data["time"].append(
                     eeg[-325:]
                 )  # 325 instead of 350 because sometimes the trial doesn't get the full 1.4, instead we are looking for 1.3s.
