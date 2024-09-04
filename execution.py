@@ -5,7 +5,7 @@ from processing_eeg_methods.data_dataclass import ProcessingMethods
 from processing_eeg_methods.data_utils import flat_a_list
 from BrainCommand_classification import BrainCommand_train, BrainCommand_test
 
-#from plot_current_trial import check_eeg
+# from plot_current_trial import check_eeg
 from board_execution import (
     multiplayer_execution_boards,
     multiplayer_player1_start_execution_positions,
@@ -58,7 +58,7 @@ def get_samples_from_certain_timestamps(eeg_in, start_timestamp, end_timestamp):
             timestamps.append(timestamp)
         if timestamp > end_timestamp:
             break
-    return data[-325:], timestamps[-325:] # Adjust quantity to 325 (instead of 350) to ensure we always have the correct amount
+    return data[:325], timestamps[:325] # Adjust quantity to 325 (instead of 350) to ensure we always have the correct amount
 
 
 def play_game(
@@ -69,8 +69,8 @@ def play_game(
     process_mode: bool = True,
 ):  # Process mode will train after a calibration and test during an execution
     fs: int = 250  # Unicorn Hybrid Black
-    automatic_movement_classes: list = [2, 3]  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
-    movement_option = [0, 1]  # The two words that the person can choose
+    automatic_movement_classes: list = []  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
+    movement_option = [0, 1, 2, 3]  # The two words that the person can choose
 
     player1_eeg_data: dict = {
         "time": [],
@@ -138,14 +138,14 @@ def play_game(
             print("loaded processing_function 1")
             player1_processing_function = ProcessingMethods()
             player1_processing_function.activate_methods(
-                spatial_features=True,  # Training is over-fitted. Training accuracy >90
+                spatial_features=False,  # Training is over-fitted. Training accuracy >90
                 simplified_spatial_features=False,
                 # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-                ShallowFBCSPNet=False,
+                ShallowFBCSPNet=True,
                 LSTM=False,  # Training is over-fitted. Training accuracy >90
                 GRU=False,  # Training is over-fitted. Training accuracy >90
                 diffE=False,  # It doesn't work if you only use one channel in the data
-                feature_extraction=True,
+                feature_extraction=False,
                 number_of_classes=len(movement_option),
             )
             player1_processing_function.load_models(
@@ -206,12 +206,7 @@ def play_game(
     color = "white"
     PI = math.pi
     total_game_time: list = []
-    player1_total_game_turns: list = []
-    player1_level_turns: list[int] = []
 
-    ## All Player 2
-    player2_total_game_turns: list = []
-    player2_level_turns: list[int] = []
 
     ## Images import
     player2_images: list = [
@@ -233,6 +228,7 @@ def play_game(
         ),
     ]
 
+    ## All Player 2
     player2_start: list = player2_start_execution_positions[current_level]
     player2_player_x: int = int(player2_start[0] * xscale)
     player2_player_y: int = int(player2_start[1] * yscale)
@@ -241,6 +237,8 @@ def play_game(
     player2_direction_command: int = player2_start[2]
     player2_last_activate_turn_tile: list[int] = [4, 4]
     player2_time_to_corner: int = 0
+    player2_total_game_turns: list = []
+    player2_level_turns: list[int] = []
     corner_color = "blue"
 
     ## Images import
@@ -283,6 +281,8 @@ def play_game(
     player1_direction: int = player1_start[2]
     player1_last_direction: int = player1_start[2]
     player1_turns_allowed: list[bool] = [False, False, False, False]
+    player1_total_game_turns: list = []
+    player1_level_turns: list[int] = []
 
     ## Other
     start_time = 0 # Init
@@ -793,11 +793,11 @@ def play_game(
             player_turns_allowed,
             subject_id: int,
     ) -> int:
-        valid_array = BrainCommand_test(eeg, subject_id, processing_function, fs)[0]
-        # valid_array = [
-        #     0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)
-        # ]
-        print(valid_array)
+        probs_array = BrainCommand_test(eeg, subject_id, processing_function, fs)[0]
+        valid_array = [
+            0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)
+        ]
+        print(np.round(valid_array, 2))
         return np.argmax(
             valid_array
         )  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
@@ -810,7 +810,7 @@ def play_game(
         """
         Section to process the direction by predicting with the EEG, or by random if in debug.
         """
-        if time.time() - start_time_eeg > 1.4 and player_speed == 0:
+        if time.time() - start_time_eeg > 1.35 and player_speed == 0:
             end_mrk_time = pylsl.local_clock()
 
             # Redraw to avoid the blue lingering
@@ -828,10 +828,9 @@ def play_game(
             pygame.display.flip()
 
             eeg, t_eeg = get_samples_from_certain_timestamps(eeg_in, start_mrk_time, end_mrk_time)
-            if len(eeg)>=325:
-                print(len(eeg))
-                #if len(player_level_turns)!=0: # Uncomment if you want to see the trial per trial
-                 #   check_eeg(eeg, t_eeg, start_mrk_time, end_mrk_time)
+            if len(eeg)==325:
+                # if len(player_level_turns)!=0: # Uncomment if you want to see the trial per trial
+                #     check_eeg(eeg, t_eeg, start_mrk_time, end_mrk_time)
 
 
                 if (
@@ -879,6 +878,9 @@ def play_game(
                             or len(set(player_level_turns[-10:])) == 1
                     ):  # If it fails more than 10 times, let the user move on.
                         prediction_movement = next_direction
+                    elif len(player_level_turns) == 0:
+                        prediction_movement = 2
+                        failed_movements += 1
                     else:
                         prediction_movement = player_level_turns[-1]
                         failed_movements += 1
@@ -894,7 +896,7 @@ def play_game(
                     ]  # exclusive range
                     time_to_corner = 0
                 player_eeg_data["time"].append(
-                    eeg[-325:]
+                    eeg[:325]
                 )  # 325 instead of 350 because sometimes the trial doesn't get the full 1.4, instead we are looking for 1.3s.
                 if game_mode == "calibration2":
                     player_eeg_data["class"].append(desired_direction)
@@ -917,65 +919,6 @@ def play_game(
             level,
             time_to_corner,
         )
-
-    def ask_for_input(
-            calibration_style,
-            eeg_data,
-            level_turns,
-            moving_flag,
-            eeg_in,
-            start_time_eeg,
-            total_game_turns,
-            direction_command,
-            corner_color,
-            start_timestamp,
-            end_timestamp
-    ):
-        if calibration_style == "only_blue":  # think and press, no forced waiting time
-            if (
-                    eeg_data["movement index"][-1] != len(level_turns) or not moving_flag
-            ):  # Valid direction or already EEG caption in process
-                # Right after the person click the arrow, we get the last 1.4s when they also thought the movement
-                eeg, eeg_t = get_samples_from_certain_timestamps(eeg_in, start_timestamp, end_timestamp)
-                if eeg:
-                    eeg_data["game index"].append(len(total_game_turns))
-                    eeg_data["movement index"].append(len(level_turns))
-                    eeg_data["class"].append(
-                        direction_command
-                    )  # given by the latest arrow key
-                    eeg_data["time"].append(eeg)
-            else:
-                corner_color = "blue"
-
-        elif calibration_style == "green_blue":  # press and think
-            if (
-                    eeg_data["movement index"][-1] != len(level_turns) or not moving_flag
-            ):  # Valid direction or already EEG caption in process
-                moving_flag = False
-                if (
-                        time.time() - start_time_eeg > 0.5
-                ):  # always 0.5s after deciding with the arrow key
-                    corner_color = "blue"
-                    if dev_mode:
-                        moving_flag = True
-                    elif time.time() - start_time_eeg > (
-                            0.5 + 1.4
-                    ):  # After giving the user 1.4s for the IS
-                        eeg, t_eeg = eeg_in.pull_chunk(
-                            timeout=0, max_samples=int(1.4 * fs)
-                        )  # Take the last 1.4 seconds
-                        if eeg:
-                            eeg_data["game index"].append(len(total_game_turns))
-                            eeg_data["movement index"].append(len(level_turns))
-                            eeg_data["class"].append(
-                                direction_command
-                            )  # given by the latest arrow key
-                            eeg_data["time"].append(eeg)
-                            moving_flag = True
-            else:
-                corner_color = "green"
-                start_time_eeg = time.time()
-        return corner_color, start_time_eeg, moving_flag
 
     def pregame_countdown(startup_counter, game_over: bool, game_won: bool, dev_mode: bool, start_time):
         if startup_counter < 200 and not game_over and not game_won and not dev_mode:
