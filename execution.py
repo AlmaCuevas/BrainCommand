@@ -155,14 +155,14 @@ def play_game(
             print("loaded processing_function 2")
             player2_processing_function = ProcessingMethods()
             player2_processing_function.activate_methods(
-                spatial_features=True,  # Training is over-fitted. Training accuracy >90
+                spatial_features=False,  # Training is over-fitted. Training accuracy >90
                 simplified_spatial_features=False,
                 # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-                ShallowFBCSPNet=False,
+                ShallowFBCSPNet=True,
                 LSTM=False,  # Training is over-fitted. Training accuracy >90
                 GRU=False,  # Training is over-fitted. Training accuracy >90
                 diffE=False,  # It doesn't work if you only use one channel in the data
-                feature_extraction=True,
+                feature_extraction=False,
                 number_of_classes=len(movement_option),
             )
             player2_processing_function.load_models(
@@ -288,13 +288,13 @@ def play_game(
     start_time = 0 # Init
     player1_direction_command: int = player1_start[2]
     if dev_mode:
-        player1_speed: int = 5
-        original_speed: int = 5
-        player2_speed: int = 5
+        player1_speed: int = 10
+        original_speed: int = 10
+        player2_speed: int = 10
     else:
-        player1_speed: int = 15
-        original_speed: int = 15
-        player2_speed: int = 15
+        player1_speed: int = 10
+        original_speed: int = 10
+        player2_speed: int = 10
 
     failed_movements = 0
     minimum_total_trials_per_movement = 20
@@ -896,7 +896,7 @@ def play_game(
                     ]  # exclusive range
                     time_to_corner = 0
                 player_eeg_data["time"].append(
-                    eeg[:325]
+                    eeg
                 )  # 325 instead of 350 because sometimes the trial doesn't get the full 1.4, instead we are looking for 1.3s.
                 if game_mode == "calibration2":
                     player_eeg_data["class"].append(desired_direction)
@@ -1297,4 +1297,4 @@ def play_game(
             # if game_mode == 'calibration2':
             #    BrainCommand_train(game_mode, player2_subject_id, selected_classes=movement_option)
 
-    print("Congrats! Game finished :D")
+    print("\n\n\n\n\n\n\nCongrats! Game finished :D")
