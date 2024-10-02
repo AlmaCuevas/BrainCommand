@@ -76,7 +76,17 @@ For supervising the project:
 
 For supporting the project, making it possible, thanks to:
 * ITESM
+
+<img src="https://github.com/user-attachments/assets/1b810e13-a61d-4e21-8ace-2793c59303d1" width="50%">
+
 * CONAHCYT
+
+<img src="https://github.com/user-attachments/assets/e239995c-5140-4431-b35b-7a292ee850a0" width="30%">
+
+
 * Neurotechs
+
+<img src="https://github.com/user-attachments/assets/cf96f571-e8fd-4341-9fdf-4db9c73cb04d" width="30%">
+
 
 Thanks to all the collaborators on Neurotechs of the Brain-Computer Research Project.
