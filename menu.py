@@ -87,8 +87,8 @@ class MainMenu(Menu):
                 self.state = 'Multiplayer'
             elif self.state == 'Multiplayer':
                 self.cursor_rect.midtop = (self.calibration_3_x + self.offset, self.calibration_3_y)
-                self.state = 'Calibration 3'
-            elif self.state == 'Calibration 3':
+                self.state = 'Calibration'
+            elif self.state == 'Calibration':
                 self.cursor_rect.midtop = (self.calibration_2_x + self.offset, self.calibration_2_y)
                 self.state = 'Calibration 2'
             elif self.state == 'Calibration 2':
