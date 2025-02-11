@@ -139,9 +139,9 @@ def play_game(
             player1_processing_function = ProcessingMethods()
             player1_processing_function.activate_methods(
                 spatial_features=False,  # Training is over-fitted. Training accuracy >90
-                simplified_spatial_features=False,
+                simplified_spatial_features=True,
                 # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-                ShallowFBCSPNet=True,
+                ShallowFBCSPNet=False,
                 LSTM=False,  # Training is over-fitted. Training accuracy >90
                 GRU=False,  # Training is over-fitted. Training accuracy >90
                 diffE=False,  # It doesn't work if you only use one channel in the data
@@ -156,9 +156,9 @@ def play_game(
             player2_processing_function = ProcessingMethods()
             player2_processing_function.activate_methods(
                 spatial_features=False,  # Training is over-fitted. Training accuracy >90
-                simplified_spatial_features=False,
+                simplified_spatial_features=True,
                 # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-                ShallowFBCSPNet=True,
+                ShallowFBCSPNet=False,
                 LSTM=False,  # Training is over-fitted. Training accuracy >90
                 GRU=False,  # Training is over-fitted. Training accuracy >90
                 diffE=False,  # It doesn't work if you only use one channel in the data

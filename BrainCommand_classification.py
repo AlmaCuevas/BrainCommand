@@ -1,6 +1,6 @@
 import mne
 from processing_eeg_methods.data_dataclass import ProcessingMethods
-from processing_eeg_methods.data_loaders import load_data_labels_based_on_dataset
+from processing_eeg_methods.data_loaders import braincommand_dataset_loader
 from processing_eeg_methods.data_utils import convert_into_independent_channels, data_normalization
 import numpy as np
 import os
@@ -9,35 +9,30 @@ dataset_info = {  # BrainCommand
     "dataset_name": "braincommand",
     "#_class": 4,
     "target_names": ["Derecha", "Izquierda", "Arriba", "Abajo"],
-    "#_channels": 8,
+    "#_channels": 16,
     "samples": 325,  # 250*1.3
     "sample_rate": 250,
     "montage": "standard_1020",
     "channels_names": ["F3", "C3", "F5", "FC5", "C5", "F7", "FT7", "T7"],
     "subjects": 1,  # PENDING
     "total_trials": 228,
+    "event_dict": {"Derecha": 0, "Izquierda": 1, "Arriba": 2, "Abajo": 3},
 }
 
-
-def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[int]) -> None:
+def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[int], independent_channels: bool = True) -> None:
     filepath: str = 'assets/game_saved_files'
 
     dataset_info["#_class"] = len(selected_classes)
 
-    _, data, labels = load_data_labels_based_on_dataset(
-        dataset_info,
-        subject_id,
-        filepath,
-        selected_classes=selected_classes,
-        apply_autoreject=True,
-        game_mode=game_mode
+    data, label = braincommand_dataset_loader(
+        filepath, subject_id, game_mode=game_mode
     )
     pm = ProcessingMethods()
     pm.activate_methods(
         spatial_features=False,  # Training is over-fitted. Training accuracy >90
-        simplified_spatial_features=False,
+        simplified_spatial_features=True,
         # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-        ShallowFBCSPNet=True,
+        ShallowFBCSPNet=False,
         LSTM=False,  # Training is over-fitted. Training accuracy >90
         GRU=False,  # Training is over-fitted. Training accuracy >90
         diffE=False,  # It doesn't work if you only use one channel in the data
@@ -45,15 +40,17 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
         number_of_classes=dataset_info["#_class"],
     )
 
-    data_ic, labels_ic = convert_into_independent_channels(
-        data, labels
-    )
-    data_ic_t = np.transpose(np.array([data_ic]), (1, 0, 2))
+    if independent_channels:
+        data, labels = convert_into_independent_channels(
+            data, label
+        )
+
+    data_t = np.transpose(np.array([data]), (1, 0, 2))
 
     pm.train(
         subject_id=subject_id,
-        data=data_ic_t,
-        labels=labels_ic,
+        data=data_t,
+        labels=labels,
         dataset_info=dataset_info,
     )
 
@@ -66,7 +63,7 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
 
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
-def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMethods, fs: int):
+def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMethods, fs: int, independent_channels: bool = True):
 
     # Preprocess
     x_array = np.array([eeg])
@@ -77,10 +74,11 @@ def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMetho
     x_array = signal.detrend(x_array)
     data = data_normalization(x_array)
 
-    data_test, _ = convert_into_independent_channels(
-        data, [0]
-    )
-    data_test = np.transpose(np.array([data_test]), (1, 0, 2))
+    if independent_channels:
+        data_test, _ = convert_into_independent_channels(
+            data, [0]
+        )
+        data_test = np.transpose(np.array([data_test]), (1, 0, 2))
 
     frequency_bandwidth = [0.5, 40]
     iir_params = dict(order=8, ftype="butter")
@@ -118,7 +116,7 @@ def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMetho
 if __name__ == "__main__":
     import time
 
-    subject_id = 27
+    subject_id = 99
     game_mode = 'calibration3'
     selected_classes = [0, 1, 2, 3]
 
