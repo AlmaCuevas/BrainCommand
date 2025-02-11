@@ -53,6 +53,9 @@ def get_samples_from_certain_timestamps(eeg_in, start_timestamp, end_timestamp):
     timestamps = []
     while True:
         sample, timestamp = eeg_in.pull_sample()
+        print(f"timestamp: {timestamp}")
+        print(f"start_timestamp: {start_timestamp}")
+        print(f"end_timestamp: {end_timestamp}")
         if start_timestamp <= timestamp <= end_timestamp:
             data.append(sample)
             timestamps.append(timestamp)
@@ -139,9 +142,9 @@ def play_game(
             player1_processing_function = ProcessingMethods()
             player1_processing_function.activate_methods(
                 spatial_features=False,  # Training is over-fitted. Training accuracy >90
-                simplified_spatial_features=True,
+                simplified_spatial_features=False,
                 # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-                ShallowFBCSPNet=False,
+                ShallowFBCSPNet=True,
                 LSTM=False,  # Training is over-fitted. Training accuracy >90
                 GRU=False,  # Training is over-fitted. Training accuracy >90
                 diffE=False,  # It doesn't work if you only use one channel in the data
@@ -156,9 +159,9 @@ def play_game(
             player2_processing_function = ProcessingMethods()
             player2_processing_function.activate_methods(
                 spatial_features=False,  # Training is over-fitted. Training accuracy >90
-                simplified_spatial_features=True,
+                simplified_spatial_features=False,
                 # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-                ShallowFBCSPNet=False,
+                ShallowFBCSPNet=True,
                 LSTM=False,  # Training is over-fitted. Training accuracy >90
                 GRU=False,  # Training is over-fitted. Training accuracy >90
                 diffE=False,  # It doesn't work if you only use one channel in the data
@@ -900,6 +903,8 @@ def play_game(
                 )  # 325 instead of 350 because sometimes the trial doesn't get the full 1.4, instead we are looking for 1.3s.
                 if game_mode == "calibration2":
                     player_eeg_data["class"].append(desired_direction)
+                elif game_mode == "singleplayer":
+                    player_eeg_data["class"].append(next_direction)
                 else:
                     player_eeg_data["class"].append(prediction_movement)
                 player_eeg_data["game index"].append(len(player_total_game_turns))
@@ -1265,7 +1270,7 @@ def play_game(
         pd.DataFrame(player1_eeg_data).to_csv(
             f"assets/game_saved_files/eeg_data_{game_mode}_sub{player1_subject_id:02d}.csv"
         )
-        output_name_txt = f"assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}.txt"
+        output_name = f"assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}.csv"
         if game_mode == "multiplayer" or game_mode == "calibration2":
             player2_eeg_data["movement index"] = player2_eeg_data["movement index"][
                 1:
@@ -1273,19 +1278,26 @@ def play_game(
             pd.DataFrame(player2_eeg_data).to_csv(
                 f"assets/game_saved_files/eeg_data_{game_mode}_sub{player2_subject_id:02d}.csv"
             )
-            output_name_txt = f"assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}_and_sub_{player2_subject_id:02d}.txt"
+            output_name = f"assets/game_saved_files/time_and_movement_{game_mode}_sub{player1_subject_id:02d}_and_sub_{player2_subject_id:02d}.csv"
 
-        file = open(output_name_txt, "w")
-        file.write(f"player1_ID, {player1_subject_id}\n")
-        file.write(f"player2_ID, {player2_subject_id}\n")
-        file.write(f"game_mode, {game_mode}\n")
-        file.write(f"total_game_time, {total_game_time}\n")
-        file.write(f"cookie_winner, {cookie_winner}\n")
-        file.write(
-            f"player1_turns, {player1_total_game_turns}\n"
-        )  # Represents the movements of the character
-        file.write(f"player2_turns, {player2_total_game_turns}\n")
-        file.close()
+        # Create a dictionary with your data
+        data = {
+            "player1_ID": [player1_subject_id],
+            "player2_ID": [player2_subject_id],
+            "game_mode": [game_mode],
+            "total_game_time": [total_game_time],
+            "cookie_winner": [cookie_winner],
+            "player1_predictions": [player1_total_game_turns],
+            "player2_predictions": [player2_total_game_turns],
+            "player1_desired_direction": [player1_eeg_data["class"]],
+            "player2_desired_direction": [player2_eeg_data["class"]]
+        }
+
+        # Create a DataFrame
+        df = pd.DataFrame(data)
+
+        # Save the DataFrame to a CSV file
+        df.to_csv(output_name, index=False)
 
         if (
             process_mode
