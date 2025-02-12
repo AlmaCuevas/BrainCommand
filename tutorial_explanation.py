@@ -1,5 +1,5 @@
 import copy
-from board_calibration import boards_tutorial, start_positions_tutorial, commands_list_tutorial
+from board_tutorial import boards_tutorial, start_positions_tutorial, commands_list_tutorial
 import pygame
 import math
 import time
