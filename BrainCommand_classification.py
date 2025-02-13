@@ -1,10 +1,11 @@
 import mne
 from processing_eeg_methods.data_dataclass import ProcessingMethods
-from processing_eeg_methods.data_loaders import braincommand_dataset_loader
 from processing_eeg_methods.data_utils import convert_into_independent_channels, data_normalization
 import numpy as np
 import os
 from scipy import signal
+import pandas as pd
+
 dataset_info = {  # BrainCommand
     "dataset_name": "braincommand",
     "#_class": 4,
@@ -18,6 +19,49 @@ dataset_info = {  # BrainCommand
     "total_trials": 228,
     "event_dict": {"Derecha": 0, "Izquierda": 1, "Arriba": 2, "Abajo": 3},
 }
+
+def braincommand_dataset_loader(
+    filepath: str, subject_id: int, game_mode: str = "calibration3"
+):
+    complete_information = pd.read_csv(
+        f"{filepath}/eeg_data_{game_mode}_sub{subject_id:02d}.csv"
+    )
+    x_list = list(complete_information["time"].apply(eval))
+    label = list(complete_information["class"])
+
+    label_0 = label.count(0)
+    print(f"label 0 is {label_0}")
+
+    label_1 = label.count(1)
+    print(f"label 1 is {label_1}")
+
+    label_2 = label.count(2)
+    print(f"label 2 is {label_2}")
+
+    label_3 = label.count(3)
+    print(f"label 3 is {label_3}")
+
+    x_array = np.array(x_list)  # trials, time, channels
+    x_array = x_array[
+        :, :, :-9
+    ]  # The last channels are accelerometer (x3), gyroscope (x3), validity, battery and counter
+    x_array = np.transpose(x_array, (0, 2, 1))
+    x_array = signal.detrend(x_array)
+
+    frequency_bandwidth = [0.5, 40]
+    iir_params = dict(order=8, ftype="butter")
+    filt = mne.filter.create_filter(
+        x_array,
+        250,
+        l_freq=frequency_bandwidth[0],
+        h_freq=frequency_bandwidth[1],
+        method="iir",
+        iir_params=iir_params,
+        verbose=False,
+    )
+    filtered = signal.sosfiltfilt(filt["sos"], x_array)
+    filtered = filtered.astype("float64")
+    return filtered, label
 
 def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[int], independent_channels: bool = True) -> None:
     filepath: str = 'assets/game_saved_files'
