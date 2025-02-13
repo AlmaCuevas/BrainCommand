@@ -53,9 +53,6 @@ def get_samples_from_certain_timestamps(eeg_in, start_timestamp, end_timestamp):
     timestamps = []
     while True:
         sample, timestamp = eeg_in.pull_sample()
-        print(f"timestamp: {timestamp}")
-        print(f"start_timestamp: {start_timestamp}")
-        print(f"end_timestamp: {end_timestamp}")
         if start_timestamp <= timestamp <= end_timestamp:
             data.append(sample)
             timestamps.append(timestamp)
