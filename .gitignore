@@ -1,8 +1,10 @@
 /assets/ERP/
-/assets/game_saved_files/
-/assets/classifier_data/
 **/__pycache__
 .DS_Store
 .idea/
 /plot_ERP_BrainCommand_movmean.ipynb
 /fix_numbers.ipynb
+!classifier_data/.gitkeep
+!game_saved_files/.gitkeep
+/assets/game_saved_files/*
+/assets/classifier_data/*

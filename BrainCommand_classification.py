@@ -1,4 +1,5 @@
 import mne
+from mne import EpochsArray
 from processing_eeg_methods.data_dataclass import ProcessingMethods
 from processing_eeg_methods.data_utils import convert_into_independent_channels, data_normalization
 import numpy as np
@@ -71,6 +72,42 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
     data, label = braincommand_dataset_loader(
         filepath, subject_id, game_mode=game_mode
     )
+    event_dict = {"Derecha": 0, "Izquierda": 1, "Arriba": 2, "Abajo": 3}
+
+    if independent_channels:
+        data, label = convert_into_independent_channels(
+            data, label
+        )
+        dataset_info["channels_names"] = ["Fz"]
+    data= np.transpose(np.array([data]), (1, 0, 2))
+
+    events = np.column_stack(
+        (
+            np.arange(
+                0,
+                dataset_info["sample_rate"] * data.shape[0],
+                dataset_info["sample_rate"],
+            ),
+            np.zeros(len(label), dtype=int),
+            np.array(label),
+        )
+    )
+
+    epochs = EpochsArray(
+        data,
+        info=mne.create_info(
+            sfreq=dataset_info["sample_rate"],
+            ch_types="eeg",
+            ch_names=dataset_info["channels_names"],
+        ),
+        events=events,
+        event_id=event_dict,
+        baseline=(None, None),
+    )
+    label = epochs.events[:, 2].astype(np.int64)  # To always keep the right format
+    data = epochs.get_data()
+
+
     pm = ProcessingMethods()
     pm.activate_methods(
         spatial_features=False,  # Training is over-fitted. Training accuracy >90
@@ -84,17 +121,10 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
         number_of_classes=dataset_info["#_class"],
     )
 
-    if independent_channels:
-        data, labels = convert_into_independent_channels(
-            data, label
-        )
-
-    data_t = np.transpose(np.array([data]), (1, 0, 2))
-
     pm.train(
         subject_id=subject_id,
-        data=data_t,
-        labels=labels,
+        data=data,
+        labels=label,
         dataset_info=dataset_info,
     )
 
@@ -160,7 +190,7 @@ def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMetho
 if __name__ == "__main__":
     import time
 
-    subject_id = 99
+    subject_id = 98
     game_mode = 'calibration3'
     selected_classes = [0, 1, 2, 3]
 
