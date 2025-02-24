@@ -64,7 +64,7 @@ def braincommand_dataset_loader(
     filtered = filtered.astype("float64")
     return filtered, label
 
-def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[int], independent_channels: bool = True) -> None:
+def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[int], independent_channels: bool = False) -> None:
     filepath: str = 'assets/game_saved_files'
 
     dataset_info["#_class"] = len(selected_classes)
@@ -137,7 +137,7 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
 
     print(f"Classifier saved! {game_mode}: Subject {subject_id:02d}")
 
-def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMethods, fs: int, independent_channels: bool = True):
+def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMethods, fs: int, independent_channels: bool = False):
 
     # Preprocess
     x_array = np.array([eeg])
