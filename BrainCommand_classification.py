@@ -1,11 +1,14 @@
 import mne
 from mne import EpochsArray
 from processing_eeg_methods.data_dataclass import ProcessingMethods
-from processing_eeg_methods.data_utils import convert_into_independent_channels, data_normalization
+from processing_eeg_methods.data_utils import convert_into_independent_channels, data_normalization, balance_samples
 import numpy as np
 import os
+
+from processing_eeg_methods.share import GLOBAL_SEED
 from scipy import signal
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 dataset_info = {  # BrainCommand
     "dataset_name": "braincommand",
@@ -79,7 +82,7 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
             data, label
         )
         dataset_info["channels_names"] = ["Fz"]
-    data= np.transpose(np.array([data]), (1, 0, 2))
+        data= np.transpose(np.array([data]), (1, 0, 2))
 
     events = np.column_stack(
         (
@@ -104,9 +107,19 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
         event_id=event_dict,
         baseline=(None, None),
     )
+
     label = epochs.events[:, 2].astype(np.int64)  # To always keep the right format
     data = epochs.get_data()
 
+    train_index, test_index = train_test_split(
+        range(len(epochs)), test_size=0.2, stratify=label, random_state=GLOBAL_SEED
+    )
+    data, label = balance_samples(
+        data[train_index],
+        label[train_index],
+        augment=False,
+        super_augmentation=10,
+    )
 
     pm = ProcessingMethods()
     pm.activate_methods(
@@ -128,6 +141,10 @@ def BrainCommand_train(game_mode: str, subject_id: int, selected_classes: list[i
         dataset_info=dataset_info,
     )
 
+    for method_name in vars(pm):
+        method = getattr(pm, method_name)
+        if method.activation:
+            print(f"Training Accuracy for {method_name}: {method.training.accuracy}")
     saving_folder: str = f'./assets/classifier_data/classifier_{game_mode}_sub{subject_id:02d}'
     os.makedirs(saving_folder, exist_ok=True)
 
@@ -149,15 +166,15 @@ def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMetho
     data = data_normalization(x_array)
 
     if independent_channels:
-        data_test, _ = convert_into_independent_channels(
+        data, _ = convert_into_independent_channels(
             data, [0]
         )
-        data_test = np.transpose(np.array([data_test]), (1, 0, 2))
+        data = np.transpose(np.array([data]), (1, 0, 2))
 
     frequency_bandwidth = [0.5, 40]
     iir_params = dict(order=8, ftype="butter")
     filt = mne.filter.create_filter(
-        data_test,
+        data,
         fs,
         l_freq=frequency_bandwidth[0],
         h_freq=frequency_bandwidth[1],
@@ -165,7 +182,7 @@ def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMetho
         iir_params=iir_params,
         verbose=False,
     )
-    filtered = signal.sosfiltfilt(filt["sos"], data_test)
+    filtered = signal.sosfiltfilt(filt["sos"], data)
     data_test = filtered.astype("float64")
 
     # Process
@@ -190,7 +207,7 @@ def BrainCommand_test(eeg, subject_id: int, processing_function: ProcessingMetho
 if __name__ == "__main__":
     import time
 
-    subject_id = 98
+    subject_id = 99
     game_mode = 'calibration3'
     selected_classes = [0, 1, 2, 3]
 
