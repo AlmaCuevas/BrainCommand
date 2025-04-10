@@ -278,6 +278,8 @@ def play_game(
     player1_start: list = player1_start_execution_positions[current_level]
     player1_player_x: int = int(player1_start[0] * xscale)
     player1_player_y: int = int(player1_start[1] * yscale)
+    player1_last_center_x=0
+    player1_last_center_y=0
     player1_direction: int = player1_start[2]
     player1_last_direction: int = player1_start[2]
     player1_turns_allowed: list[bool] = [False, False, False, False]
@@ -309,6 +311,8 @@ def play_game(
     player1_moving_flag: bool = True
     player1_start_time_eeg: float = 0
     player2_start_time_eeg: float = 0
+    player2_last_center_x = 0
+    player2_last_center_y = 0
     misc_color: str = "lightpink4"
 
     player1_desired_direction_player = 0  # default to avoid missing variable
@@ -543,6 +547,8 @@ def play_game(
             level: list,
             player_num: int,
             start_player_time,
+            last_center_x,
+            last_center_y,
             calibration_moving_flag: bool = True,
     ):
         cookie_winner_num = 0
@@ -554,17 +560,21 @@ def play_game(
             left_volume = 1
         corner_check = copy.deepcopy(turns_allowed)
         corner_check[direction] = False
+
         if level[center_y // yscale][center_x // xscale] == 1:
             level[center_y // yscale][center_x // xscale] = 0
         elif level[center_y // yscale][center_x // xscale] == 2:
             cookie_winner_num = player_num
             level[center_y // yscale][center_x // xscale] = 0
+
         if sum(corner_check) >= 2 or corner_check == turns_allowed:
             if (
                     level[last_activate_turn_tile[0]][last_activate_turn_tile[1]]
                     != -1 * player_num
-                    and time_to_corner > 10
+                    and not ((last_center_x+2*xscale > center_x and center_x > last_center_x-2*xscale)
+            and (last_center_y+2*yscale > center_y and center_y > last_center_y-2*xscale)) # todo: now it fails because the map and the cursor are not sync and they crash. fix that!
             ):
+                print("stop!")
                 channel.play(sound_thud)
                 start_player_time = time.time()
                 start_mrk_time = pylsl.local_clock()
@@ -572,11 +582,14 @@ def play_game(
                 level[center_y // yscale][center_x // xscale] = -1 * player_num
                 last_activate_turn_tile = [center_y // yscale, center_x // xscale]
                 player_speed = 0
+                last_center_x = center_x
+                last_center_y = center_y
         elif (
                 level[last_activate_turn_tile[0]][last_activate_turn_tile[1]]
                 == -1 * player_num
                 and calibration_moving_flag
         ):
+            print("go!")
             channel.play(sound_go)
             channel.set_volume(right_volume, left_volume)
             level[last_activate_turn_tile[0]][last_activate_turn_tile[1]] = 0
@@ -590,6 +603,8 @@ def play_game(
             level,
             cookie_winner_num,
             start_player_time,
+            last_center_x,
+            last_center_y
         )
 
     def draw_player(
@@ -624,35 +639,35 @@ def play_game(
         if direction == 2 or direction == 3:
             if xscale // 3 <= center_x % xscale <= xscale:
                 if level[(center_y + half_scale) // yscale][center_x // xscale] < 3:
-                    # if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y + half_scale)), 20, 1)
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y + half_scale)), 20, 1)
                     turns[3] = True
                 if (
                         level[(center_y - half_scale - 10) // yscale][center_x // xscale]
                         < 3
                 ):
-                    # if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y - half_scale - 10)), 20, 1)
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, (center_y - half_scale - 10)), 20, 1)
                     turns[2] = True
             if yscale // 3 <= center_y % yscale <= yscale:
                 if level[center_y // yscale][(center_x - xscale) // xscale] < 3:
-                    # if dev_mode: pygame.draw.circle(screen, 'pink', (center_x - xscale, center_y), 20, 1)
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x - xscale, center_y), 20, 1)
                     turns[1] = True
                 if level[center_y // yscale][(center_x + xscale) // xscale] < 3:
-                    # if dev_mode: pygame.draw.circle(screen, 'pink', (center_x + xscale, center_y), 20, 1)
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x + xscale, center_y), 20, 1)
                     turns[0] = True
         elif direction == 0 or direction == 1:
             if xscale // 3 <= center_x % xscale <= xscale:
                 if level[(center_y + yscale) // yscale][center_x // xscale] < 3:
-                    # if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, center_y + yscale), 20, 1)
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, center_y + yscale), 20, 1)
                     turns[3] = True
                 if level[(center_y - yscale) // yscale][center_x // xscale] < 3:
-                    # if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, center_y - yscale), 20, 1)
+                    if dev_mode: pygame.draw.circle(screen, 'pink', (center_x, center_y - yscale), 20, 1)
                     turns[2] = True
             if yscale // 3 <= center_y % yscale <= yscale:
                 if level[center_y // yscale][(center_x - half_scale - 8) // xscale] < 3:
-                    # if dev_mode: pygame.draw.circle(screen, 'pink', ((center_x - half_scale - 8), center_y), 20, 1)
+                    if dev_mode: pygame.draw.circle(screen, 'pink', ((center_x - half_scale - 8), center_y), 20, 1)
                     turns[1] = True
                 if level[center_y // yscale][(center_x + half_scale) // xscale] < 3:
-                    # if dev_mode: pygame.draw.circle(screen, 'pink', ((center_x + half_scale), center_y), 20, 1)
+                    if dev_mode: pygame.draw.circle(screen, 'pink', ((center_x + half_scale), center_y), 20, 1)
                     turns[0] = True
         return turns
 
@@ -1008,7 +1023,10 @@ def play_game(
                     player2_player_y,
                     player2_speed,
                 )
-
+            aver= (not ((player1_last_center_x+2*xscale > player1_center_x and player1_center_x > player1_last_center_x-2*xscale)
+            and (player1_last_center_y+2*yscale > player1_center_y and player1_center_y > player1_last_center_y-2*xscale)))
+            print(f"did it got far away enough? {aver}")
+            print(f"speed= {player1_speed}")
             (
                 player1_start_mrk_time,
                 player1_last_activate_turn_tile,
@@ -1017,6 +1035,8 @@ def play_game(
                 level,
                 player1_cookie_winner_num,
                 player1_start_time_eeg,
+                player1_last_center_x,
+                player1_last_center_y,
             ) = check_collisions(
                 player1_start_mrk_time,
                 player1_last_activate_turn_tile,
@@ -1029,6 +1049,8 @@ def play_game(
                 level,
                 1,
                 player1_start_time_eeg,
+                player1_last_center_x,
+                player1_last_center_y,
                 player1_moving_flag,
             )
             if game_mode == "multiplayer" or game_mode == "calibration2":
@@ -1040,6 +1062,8 @@ def play_game(
                     level,
                     player2_cookie_winner_num,
                     player2_start_time_eeg,
+                    player2_last_center_x,
+                    player2_last_center_y,
                 ) = check_collisions(
                     player2_start_mrk_time,
                     player2_last_activate_turn_tile,
@@ -1052,6 +1076,8 @@ def play_game(
                     level,
                     2,
                     player2_start_time_eeg,
+                    player2_last_center_x,
+                    player2_last_center_y,
                 )
 
             ## Section to decide if the game is finished.
