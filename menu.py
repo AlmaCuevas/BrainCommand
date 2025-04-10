@@ -25,13 +25,12 @@ class MainMenu(Menu):
     def __init__(self, game, dev_mode: bool = False, player1_ID: int = 0, player2_ID: int = 0):
         Menu.__init__(self, game, dev_mode, player1_ID, player2_ID)
         self.state = "Tutorial"
-        self.tutorial_1_x, self.tutorial_1_y = self.mid_w, self.mid_h - 100
-        self.free_singleplayer_x, self.free_singleplayer_y = self.mid_w, self.mid_h - 50
-        self.calibration_2_x, self.calibration_2_y = self.mid_w, self.mid_h + 0
-        self.calibration_3_x, self.calibration_3_y = self.mid_w, self.mid_h + 50
-        self.multiplayerx, self.multiplayery = self.mid_w, self.mid_h + 100
-        self.singleplayerx, self.singleplayery = self.mid_w, self.mid_h + 150
-        self.creditsx, self.creditsy = self.mid_w, self.mid_h + 250
+        self.tutorial_1_x, self.tutorial_1_y = self.mid_w, self.mid_h - 150
+        self.calibration_3_x, self.calibration_3_y = self.mid_w, self.mid_h - 90
+        self.singleplayerx, self.singleplayery = self.mid_w, self.mid_h - 30
+        # self.free_singleplayer_x, self.free_singleplayer_y = self.mid_w, self.mid_h + 60
+        # self.multiplayerx, self.multiplayery = self.mid_w, self.mid_h + 120
+        self.creditsx, self.creditsy = self.mid_w, self.mid_h + 150
         self.cursor_rect.midtop = (self.tutorial_1_x + self.offset, self.tutorial_1_y)
 
     def display_menu(self):
@@ -42,11 +41,10 @@ class MainMenu(Menu):
             self.game.display.fill(self.game.BLACK)
             self.game.draw_text('Brain Command', 70, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 2 - 300)
             self.game.draw_text("Tutorial", 40, self.tutorial_1_x, self.tutorial_1_y)
-            self.game.draw_text("Solo libre", 40, self.free_singleplayer_x, self.free_singleplayer_y)
-            self.game.draw_text("Calibración 2", 40, self.calibration_2_x, self.calibration_2_y)
             self.game.draw_text("Calibración", 40, self.calibration_3_x, self.calibration_3_y)
-            self.game.draw_text("Competitivo", 40, self.multiplayerx, self.multiplayery)
             self.game.draw_text("Solo", 40, self.singleplayerx, self.singleplayery)
+            # self.game.draw_text("Solo libre", 40, self.free_singleplayer_x, self.free_singleplayer_y)
+            # self.game.draw_text("Competitivo", 40, self.multiplayerx, self.multiplayery)
             self.game.draw_text("Créditos", 40, self.creditsx, self.creditsy)
             self.draw_cursor()
             self.blit_screen()
@@ -55,23 +53,20 @@ class MainMenu(Menu):
     def move_cursor(self):
         if self.game.DOWN_KEY:
             if self.state == 'Tutorial':
-                self.cursor_rect.midtop = (self.free_singleplayer_x + self.offset, self.free_singleplayer_y)
-                self.state = 'Free Singleplayer'
-            elif self.state == 'Free Singleplayer':
-                self.cursor_rect.midtop = (self.calibration_2_x + self.offset, self.calibration_2_y)
-                self.state = 'Calibration 2'
-            elif self.state == 'Calibration 2':
                 self.cursor_rect.midtop = (self.calibration_3_x + self.offset, self.calibration_3_y)
                 self.state = 'Calibration'
             elif self.state == 'Calibration':
-                self.cursor_rect.midtop = (self.multiplayerx + self.offset, self.multiplayery)
-                self.state = 'Multiplayer'
-            elif self.state == 'Multiplayer':
                 self.cursor_rect.midtop = (self.singleplayerx + self.offset, self.singleplayery)
                 self.state = 'Singleplayer'
             elif self.state == 'Singleplayer':
                 self.cursor_rect.midtop = (self.creditsx + self.offset, self.creditsy)
                 self.state = 'Credits'
+            # elif self.state == 'Free Singleplayer':
+            #     self.cursor_rect.midtop = (self.creditsx + self.offset, self.creditsy)
+            #     self.state = 'Credits'
+            # elif self.state == 'Multiplayer':
+            #     self.cursor_rect.midtop = (self.creditsx + self.offset, self.creditsy)
+            #     self.state = 'Credits'
             elif self.state == 'Credits':
                 self.cursor_rect.midtop = (self.tutorial_1_x + self.offset, self.tutorial_1_y)
                 self.state = 'Tutorial'
@@ -82,21 +77,21 @@ class MainMenu(Menu):
             elif self.state == 'Credits':
                 self.cursor_rect.midtop = (self.singleplayerx + self.offset, self.singleplayery)
                 self.state = 'Singleplayer'
+            # elif self.state == 'Free Singleplayer':
+            #     self.cursor_rect.midtop = (self.singleplayerx + self.offset, self.singleplayery)
+            #     self.state = 'Singleplayer'
             elif self.state == 'Singleplayer':
-                self.cursor_rect.midtop = (self.multiplayerx + self.offset, self.multiplayery)
-                self.state = 'Multiplayer'
-            elif self.state == 'Multiplayer':
                 self.cursor_rect.midtop = (self.calibration_3_x + self.offset, self.calibration_3_y)
                 self.state = 'Calibration'
             elif self.state == 'Calibration':
-                self.cursor_rect.midtop = (self.calibration_2_x + self.offset, self.calibration_2_y)
-                self.state = 'Calibration 2'
-            elif self.state == 'Calibration 2':
-                self.cursor_rect.midtop = (self.free_singleplayer_x + self.offset, self.free_singleplayer_y)
-                self.state = 'Free Singleplayer'
-            elif self.state == 'Free Singleplayer':
                 self.cursor_rect.midtop = (self.tutorial_1_x + self.offset, self.tutorial_1_y)
                 self.state = 'Tutorial'
+            # elif self.state == 'Credits':
+            #     self.cursor_rect.midtop = (self.multiplayerx + self.offset, self.multiplayery)
+            #     self.state = 'Multiplayer'
+            # elif self.state == 'Multiplayer':
+            #     self.cursor_rect.midtop = (self.free_singleplayer_x + self.offset, self.free_singleplayer_y)
+            #     self.state = 'Free Singleplayer'
 
 
     def check_input(self):
@@ -108,26 +103,22 @@ class MainMenu(Menu):
             if self.state == 'Tutorial':
                 self.game.playing = True
                 tutorial_explanation.tutorial()  # No interactive video
-            elif self.state == 'Free Singleplayer':
-                self.game.playing = True
-                execution.play_game(game_mode='free singleplayer', player1_subject_id=self.player1_ID, player2_subject_id=0,
-                                    dev_mode=self.dev_mode)
-            elif self.state == 'Calibration 2':
-                self.game.playing = True
-                execution.play_game(game_mode='calibration2', player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID,
-                                    dev_mode=self.dev_mode)  # With defined toggle
             elif self.state == 'Calibration':
                 self.game.playing = True
                 execution.play_game(game_mode='calibration3', player1_subject_id=self.player1_ID, player2_subject_id=self.player2_ID,
                                     dev_mode=self.dev_mode)  # With defined toggle
-            elif self.state == 'Multiplayer':
-                self.game.playing = True
-                execution.play_game(game_mode='multiplayer', player1_subject_id=self.player1_ID,
-                                    player2_subject_id=self.player2_ID, dev_mode=self.dev_mode)
             elif self.state == 'Singleplayer':
                 self.game.playing = True
                 execution.play_game(game_mode='singleplayer', player1_subject_id=self.player1_ID, player2_subject_id=0,
                                     dev_mode=self.dev_mode)
+            # elif self.state == 'Free Singleplayer':
+            #     self.game.playing = True
+            #     execution.play_game(game_mode='free singleplayer', player1_subject_id=self.player1_ID, player2_subject_id=0,
+            #                         dev_mode=self.dev_mode)
+            # elif self.state == 'Multiplayer':
+            #     self.game.playing = True
+            #     execution.play_game(game_mode='multiplayer', player1_subject_id=self.player1_ID,
+            #                         player2_subject_id=self.player2_ID, dev_mode=self.dev_mode)
             elif self.state == 'Credits':
                 self.game.curr_menu = self.game.credits
             self.run_display = False
@@ -144,11 +135,9 @@ class CreditsMenu(Menu):
                 self.game.curr_menu = self.game.main_menu
                 self.run_display = False
             self.game.display.fill(self.game.BLACK)
-        
-        # Titulo
+
             self.game.draw_text('Brain Command', 70, self.game.DISPLAY_W / 2, text_y_position)
-        
-        # Gente
+
             self.game.draw_text('Hecho por:', 45, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 50 + text_y_offset)
             self.game.draw_text('Alma Cuevas', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 90 + text_y_offset)
             self.game.draw_text('Edgar Aguilera', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 130 + text_y_offset)
@@ -160,7 +149,7 @@ class CreditsMenu(Menu):
             self.game.draw_text('Dra. Luz María Alonso Valerdi', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 420 + text_y_offset)
             self.game.draw_text('Dr. Alejandro Antonio Torres García', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 460 + text_y_offset)
             self.game.draw_text('Dr. Luis Alberto Muñoz Ubando', 40, self.game.DISPLAY_W / 2, self.game.DISPLAY_H / 1 + 500 + text_y_offset)
-        # Cambio de posicion
+
             text_y_position += -1.2  
             text_y_offset += -1.2
 

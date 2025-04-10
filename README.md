@@ -55,7 +55,7 @@ If you use this code in your project use the citation below:
     title={Brain Command},
     author={Alma Cuevas},
     year={2024},
-    url={https://github.com/AlmaCuevas/BrainCommand}}
+    url={https://github.com/AlmaCuevas/BrainCommand}
 }
 ```
 Check the game credits to know all the people behind the proyect!
