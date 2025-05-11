@@ -3,7 +3,7 @@ import random
 
 from processing_eeg_methods.data_dataclass import ProcessingMethods
 from processing_eeg_methods.data_utils import flat_a_list
-from BrainCommand_classification import BrainCommand_train, BrainCommand_test
+from BrainCommand_classification import BrainCommand_train, BrainCommand_test, BrainCommand_online_train_test
 
 # from plot_current_trial import check_eeg
 from board_execution import (
@@ -33,6 +33,9 @@ import time
 import pylsl
 import numpy as np
 import pandas as pd
+import torch
+from eegnet_implementation import EEGNetModel
+
 
 # The report file will only be saved when the game finishes without quitting.
 # You don't have to close or open a new game to select a different mode.
@@ -71,6 +74,8 @@ def play_game(
     fs: int = 250  # Unicorn Hybrid Black
     automatic_movement_classes: list = []  # 0-RIGHT, 1-LEFT, 2-UP, 3-DOWN
     movement_option = [0, 1, 2, 3]  # The two words that the person can choose
+
+    device = "cpu"
 
     player1_eeg_data: dict = {
         "time": [],
@@ -131,43 +136,29 @@ def play_game(
     player1_start_mrk_time = 0
     player1_end_mrk_time = 0
 
-    player1_processing_function = None
-    player2_processing_function = None
+    player1_trained_eegnet_model = None
+    player2_trained_eegnet_model = None
     if process_mode and not dev_mode:
         if "singleplayer" in game_mode or game_mode == "multiplayer":
-            print("loaded processing_function 1")
-            player1_processing_function = ProcessingMethods()
-            player1_processing_function.activate_methods(
-                spatial_features=False,  # Training is over-fitted. Training accuracy >90
-                simplified_spatial_features=False,
-                # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-                ShallowFBCSPNet=True,
-                LSTM=False,  # Training is over-fitted. Training accuracy >90
-                GRU=False,  # Training is over-fitted. Training accuracy >90
-                diffE=False,  # It doesn't work if you only use one channel in the data
-                feature_extraction=False,
-                number_of_classes=len(movement_option),
-            )
-            player1_processing_function.load_models(
-                f"assets/classifier_data/classifier_{processing_function_loading_game_mode}_sub{player1_subject_id:02d}"
-            )
+            #print("loaded EEGNet model 1")
+            #saving_folder: str = f'./assets/classifier_data/classifier_calibration3_sub{player1_subject_id:02d}'
+            #file_name: str = saving_folder + f'/eegnet_model_subject_{player1_subject_id}.pth'
+
+
+            player1_trained_eegnet_model = EEGNetModel(chans=8, classes=4,
+                                       time_points=325).to(device)
+            #player1_trained_eegnet_model.load_state_dict(torch.load(file_name))
+
         if game_mode == "multiplayer":
-            print("loaded processing_function 2")
-            player2_processing_function = ProcessingMethods()
-            player2_processing_function.activate_methods(
-                spatial_features=False,  # Training is over-fitted. Training accuracy >90
-                simplified_spatial_features=False,
-                # Simpler than selected_transformers, only one transformer and no frequency bands. No need to activate both at the same time
-                ShallowFBCSPNet=True,
-                LSTM=False,  # Training is over-fitted. Training accuracy >90
-                GRU=False,  # Training is over-fitted. Training accuracy >90
-                diffE=False,  # It doesn't work if you only use one channel in the data
-                feature_extraction=False,
-                number_of_classes=len(movement_option),
-            )
-            player2_processing_function.load_models(
-                f"assets/classifier_data/classifier_{processing_function_loading_game_mode}_sub{player2_subject_id:02d}"
-            )
+            print("loaded EEGNet model 2")
+            saving_folder: str = f'./assets/classifier_data/classifier_calibration3_sub{player1_subject_id:02d}'
+            file_name: str = saving_folder + f'eegnet_model_subject_{player1_subject_id}.pth'
+
+
+            player2_trained_eegnet_model = EEGNetModel(chans=8, classes=4,
+                                                       time_points=325).to(device)
+            player2_trained_eegnet_model.load_state_dict(torch.load(file_name))
+
     if not dev_mode:
         player1_start_mrk_time = 0
         player1_eeg_in = lsl_inlet(
@@ -788,23 +779,29 @@ def play_game(
         return level
 
     def eeg_cleaning_to_prediction(
-            eeg,
-            processing_function: ProcessingMethods,
+            eeg_train, label_train,
+            eeg_test,
+            trained_eegnet_model,
             player_turns_allowed,
-            subject_id: int,
     ) -> int:
-        probs_array = BrainCommand_test(eeg, subject_id, processing_function, fs)[0]
+        #probs_array_torch = BrainCommand_test(eeg, trained_eegnet_model, fs)
+        probs_array_torch = BrainCommand_online_train_test(eeg_train, label_train, eeg_test, trained_eegnet_model, fs)
+        probs_array = probs_array_torch.cpu().detach().numpy()[0]
+        normalized_array = (probs_array - np.min(probs_array)) / (np.max(probs_array) - np.min(probs_array))
+        print(f"player turns allowed: {player_turns_allowed}")
+        print(f"normalized array: {normalized_array}")
         valid_array = [
-            0 if not flag else x for x, flag in zip(probs_array, player_turns_allowed)
+            0 if not flag else x for x, flag in zip(normalized_array, player_turns_allowed)
         ]
-        print(np.round(valid_array, 2))
+        print(f"Valid array: {np.round(valid_array, 2)}")
+        print(f"Classifier returned: {np.argmax(valid_array)}")
         return np.argmax(
             valid_array
         )  # this one just chooses the highest value from available, if you want to add a difference threshold between the highest and the second highest, you have to do it before this,
 
     def decision_maker(start_mrk_time, eeg_in, player_total_game_turns, desired_direction: int, player_speed: int,
                        start_time_eeg: float, player_turns_allowed: list[bool], player_eeg_data: dict,
-                       player_direction_command: int, player_level_turns: list[int], processing_function, subject_id,
+                       player_direction_command: int, player_level_turns: list[int], trained_eegnet_model, subject_id,
                        desired_directions_map: list = [], failed_movements: int = 0, level: list = [],
                        last_activate_turn_tile: list = [], time_to_corner: int = 0):
         """
@@ -855,17 +852,17 @@ def play_game(
                         and process_mode
                 ):
                     prediction_movement = eeg_cleaning_to_prediction(
+                        player_eeg_data["time"], player_eeg_data["class"],
                         eeg,
-                        processing_function=processing_function,
+                        trained_eegnet_model=trained_eegnet_model,
                         player_turns_allowed=player_turns_allowed,
-                        subject_id=subject_id,
                     )
                 elif process_mode:
                     eeg_prediction_movement = eeg_cleaning_to_prediction(
+                        player_eeg_data["time"], player_eeg_data["class"],
                         eeg,
-                        processing_function=processing_function,
+                        trained_eegnet_model=trained_eegnet_model,
                         player_turns_allowed=player_turns_allowed,
-                        subject_id=subject_id,
                     )
                     next_direction = desired_directions_map[
                         len(player_level_turns) - failed_movements
@@ -886,6 +883,7 @@ def play_game(
                         failed_movements += 1
 
                 else:
+                    print("Careful: Answer is randomized!")
                     allowed_movement_random = [
                         x
                         for x, flag in zip(movement_option, player_turns_allowed)
@@ -901,12 +899,12 @@ def play_game(
                 if game_mode == "calibration2":
                     player_eeg_data["class"].append(desired_direction)
                 elif game_mode == "singleplayer":
-                    player_eeg_data["class"].append(next_direction)
+                    player_eeg_data["class"].append(next_direction) # saving the direction that should had been
                 else:
                     player_eeg_data["class"].append(prediction_movement)
                 player_eeg_data["game index"].append(len(player_total_game_turns))
                 player_eeg_data["movement index"].append(len(player_level_turns))
-                print(f"Classifier returned: {prediction_movement}")
+                print(f"Decided direction: {prediction_movement}") # The same as previously if the classifier didn't guess correctly
 
                 player_direction_command = prediction_movement
                 player_level_turns.append(player_direction_command)
@@ -986,11 +984,11 @@ def play_game(
             if not dev_mode:
                 player1_speed, player1_direction_command, player1_level_turns, player1_eeg_data, failed_movements, level, player1_time_to_corner = decision_maker(
                     player1_start_mrk_time, player1_eeg_in, player1_total_game_turns, player1_desired_direction_player, player1_speed, player1_start_time_eeg, player1_turns_allowed, player1_eeg_data,
-                    player1_direction_command, player1_level_turns, player1_processing_function, player1_subject_id, desired_directions_map, failed_movements, level, player1_last_activate_turn_tile, player1_time_to_corner)
+                    player1_direction_command, player1_level_turns, player1_trained_eegnet_model, player1_subject_id, desired_directions_map, failed_movements, level, player1_last_activate_turn_tile, player1_time_to_corner)
                 if game_mode == 'multiplayer' or game_mode == 'calibration2':
                     player2_speed, player2_direction_command, player2_level_turns, player2_eeg_data, _, _, _ = decision_maker(player2_start_mrk_time,
                                                                                                                               player2_eeg_in, player2_total_game_turns, player2_desired_direction_player, player2_speed, player2_start_time_eeg, player2_turns_allowed, player2_eeg_data,
-                                                                                                                              player2_direction_command, player2_level_turns, player2_processing_function, player2_subject_id)
+                                                                                                                              player2_direction_command, player2_level_turns, player2_trained_eegnet_model, player2_subject_id)
 
             if player1_moving_flag:
                 player1_player_x, player1_player_y = move_player(
